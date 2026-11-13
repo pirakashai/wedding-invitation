@@ -259,3 +259,9 @@ function uploadSong_(name, b64) {
   if (r.getResponseCode() >= 300) throw new Error('GitHub refused the upload (' + r.getResponseCode() + ')');
   return { ok: true, file: file };
 }
+
+/** Run once from the editor (Run ▶ authorize) to allow the script to talk to GitHub. */
+function authorize() {
+  UrlFetchApp.fetch('https://api.github.com/zen', { muteHttpExceptions: true });
+  Logger.log('GitHub access allowed');
+}
