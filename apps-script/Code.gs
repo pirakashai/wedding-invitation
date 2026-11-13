@@ -41,7 +41,9 @@ function handle_(req) {
 }
 
 /* ---------- Sheet helpers ---------- */
-function sheet_(name) { return SpreadsheetApp.getActive().getSheetByName(name); }
+const SHEET_ID = '1eoV-iLnx5hI1MUF8Dl0EASvu5TZmMUKSQjS7C_By_Pk'; // Wedding Portal DB
+let SS_;
+function sheet_(name) { SS_ = SS_ || SpreadsheetApp.openById(SHEET_ID); return SS_.getSheetByName(name); }
 
 function readGuests_() {
   const sh = sheet_('Guests');
