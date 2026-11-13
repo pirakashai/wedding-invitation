@@ -206,9 +206,16 @@ form{width:100%;max-width:340px;text-align:left;margin-top:16px}
 .counter button{width:38px;height:38px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--maroon);font-size:22px;cursor:pointer}
 .counter output{font-family:Marcellus,serif;font-size:20px;min-width:24px;text-align:center;color:var(--maroon)}
 input[type=text],textarea{width:100%;border:1px solid rgba(184,134,47,.5);border-radius:12px;padding:12px;font:inherit;font-size:17px;background:rgba(255,255,255,.6);color:var(--ink)}
-textarea{min-height:60px;resize:vertical}
-#rsvp{padding-bottom:140px}
-#rsvp h2{font-size:44px}
+textarea{min-height:48px;resize:vertical}
+#countWrap{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#countWrap .fl,#countWrap .total{grid-column:1/-1}
+#countWrap .counter{flex-direction:column;gap:4px;padding:8px 6px;margin:0}
+#countWrap .counter span{font-size:16px}
+#countWrap[hidden]{display:none!important}
+#rsvp h2{margin:2px 0}
+#rsvp .choice{margin-bottom:8px}
+#rsvp{padding-top:44px;padding-bottom:64px}
+#rsvp h2{font-size:40px}
 .err{color:#a3262f;font-size:15px;min-height:20px;margin-top:6px}
 #rsvpDone{display:none;max-width:320px}
 #rsvpDone .script{font-size:46px;color:var(--maroon)}
@@ -390,8 +397,7 @@ textarea{min-height:60px;resize:vertical}
       <span class="fl">A wish for the couple (optional)</span>
       <textarea id="rMsg" placeholder="Wishing you a lifetime of happiness"></textarea>
       <div class="err" id="rErr"></div>
-      <div class="row" style="margin-top:8px"><button class="btn" type="submit" id="rBtn">Send reply</button></div>
-      <p style="text-align:center;margin-top:14px"><a href="#" id="rLater" style="color:var(--muted);font-size:15px">Reply later, continue →</a></p>
+      <div class="row" style="margin-top:6px;flex-wrap:nowrap"><button class="btn" type="submit" id="rBtn">Send reply</button><a href="#" class="btn ghost" id="rLater">Later →</a></div>
     </form>
     <div id="rsvpDone">
       <div class="script" id="doneTitle">Thank you</div>
@@ -663,12 +669,12 @@ $("rsvpBy").textContent = late
 const cnt = {veg:0, nv:0};
 function showTotal(){
   const t = cnt.veg + cnt.nv;
-  $("total").textContent = `${t} ${t===1?"person":"people"}${G0?` · up to ${MAX} invited`:""}`;
+  $("total").textContent = t ? `${t} ${t===1?"person":"people"}` : "";
 }
 showTotal();
 document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
   const k = b.dataset.c, v = +b.dataset.v;
-  if (v > 0 && cnt.veg + cnt.nv >= MAX){ $("rErr").textContent = `This invitation is for up to ${MAX}. Call us if you need more.`; return; }
+  if (v > 0 && cnt.veg + cnt.nv >= MAX){ $("rErr").textContent = "If more of you are coming, please call us."; return; }
   cnt[k] = Math.max(0, cnt[k] + v); $(k).textContent = cnt[k]; $("rErr").textContent = ""; showTotal();
 });
 const form = $("rsvpForm");
