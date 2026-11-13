@@ -148,18 +148,17 @@ h2{font-family:"Great Vibes",cursive;font-weight:400;font-size:52px;line-height:
 /* Invite */
 .guest{font-family:"Great Vibes",cursive;font-size:44px;color:var(--maroon);margin:10px 0;line-height:1.2}
 .names{margin:6px 0}
-#invite{padding-top:40px;padding-bottom:96px}
-#invite .guest{font-size:36px;margin:2px 0}
-#invite .divider{margin:6px auto}
-@media (max-height:900px){#invite [data-art=lotus]{display:none}}
-#invite .names .n{font-size:42px;line-height:1.05}
-#invite .names .amp{font-size:28px;margin:0}
-#invite .names .full{font-size:11.5px}
+#invite .guest{font-size:46px;margin:10px 0}
+#couple{padding-top:44px;padding-bottom:100px}
+#couple .names .n{font-size:42px;line-height:1.05}
+#couple .names .amp{font-size:28px;margin:0}
+#couple .names .full{font-size:11.5px}
+
 .names .n{font-family:"Great Vibes",cursive;font-size:50px;color:var(--maroon);line-height:1.15}
 .names .full{font-family:Marcellus,serif;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .names .amp{font-family:"Great Vibes",cursive;font-size:36px;color:var(--gold);margin:4px 0}
 .names .tan{font-family:"Noto Serif Tamil",serif;font-size:17px;color:var(--maroon-d)}
-.couple-img{width:auto;height:min(240px,22svh);margin:6px 0 8px!important;aspect-ratio:200/270;object-fit:cover;object-position:50% 22%;border-radius:110px 110px 12px 12px;border:3px solid var(--gold-l);margin:10px 0 18px;box-shadow:0 10px 30px rgba(90,40,10,.18)}
+.couple-img{width:auto;height:min(440px,50svh);margin:0 0 12px!important;aspect-ratio:200/270;object-fit:cover;object-position:50% 22%;border-radius:110px 110px 12px 12px;border:3px solid var(--gold-l);margin:10px 0 18px;box-shadow:0 10px 30px rgba(90,40,10,.18)}
 
 /* Calendar */
 .cal{background:rgba(255,255,255,.55);border:1px solid rgba(184,134,47,.4);border-radius:14px;padding:18px 16px 14px;width:100%;max-width:330px;margin:16px 0}
@@ -310,11 +309,16 @@ textarea{min-height:48px;resize:vertical}
     <div class="frame"></div>
     <div class="caps reveal">Wedding invitation</div>
     <div class="divider reveal d1" data-art="divider"></div>
-    <p class="reveal d1" style="font-style:italic;color:var(--muted)">With the blessings of the Almighty and our families,<br>we joyfully invite</p>
-    <div class="guest reveal d2" id="guestName"></div>
-    <p class="reveal d2" style="font-style:italic;color:var(--muted)">to celebrate our wedding</p>
-    <img class="couple-img reveal d3" id="coupleImg" alt="Pirakash and Shageepana" hidden>
-    <div class="names reveal d3">
+    <div class="guest reveal d1" id="guestName"></div>
+    <p class="reveal d2" style="font-style:italic;color:var(--muted)">With the blessings of the Almighty and our families,<br>we joyfully invite you<br>to celebrate our wedding</p>
+    <div style="width:110px;margin-top:18px" class="reveal d3" data-art="lotus"></div>
+  </section>
+
+  <!-- 2b. The couple -->
+  <section id="couple">
+    <div class="frame"></div>
+    <img class="couple-img reveal" id="coupleImg" alt="Pirakash and Shageepana" hidden>
+    <div class="names reveal d2">
       <div class="n" id="groomN"></div>
       <div class="full" id="groomF"></div>
       <div class="tan" id="groomT"></div>
@@ -323,7 +327,6 @@ textarea{min-height:48px;resize:vertical}
       <div class="full" id="brideF"></div>
       <div class="tan" id="brideT"></div>
     </div>
-    <div style="width:90px" class="reveal d4" data-art="lotus"></div>
   </section>
 
   <!-- 3. Date -->
@@ -545,7 +548,7 @@ if (G0){
 } else {
   $("gateCaps").textContent = "You are invited";
   $("gateFor").hidden = true;
-  $("guestName").textContent = "our dear family & friends";
+  $("guestName").textContent = "Dear family & friends";
   $("nameWrap").hidden = false;
 }
 const MAX = (G0 && G0.max) || 10;
@@ -643,7 +646,7 @@ $("nextBtn").onclick = () => { if ($("nextBtn").classList.contains("show")) go(c
 $("backBtn").onclick = () => go(cur - 1);
 
 /* ---------- Desktop art panel ---------- */
-const ART_FOR = { blessing: I.gate, invite: I.couple, date: I.gate, venue: I.venue, day: I.gate, countdown: I.couple, rsvp: I.gate, contact: I.couple, thanks: I.couple };
+const ART_FOR = { blessing: I.gate, invite: I.gate, couple: I.couple, date: I.gate, venue: I.venue, day: I.gate, countdown: I.couple, rsvp: I.gate, contact: I.couple, thanks: I.couple };
 let artFlip = false, artNow = "";
 function setArt(p){
   const src = ART_FOR[p.id] || I.gate; if (!src || src === artNow) return;
