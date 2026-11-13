@@ -137,7 +137,7 @@ function deleteGuest_(code) {
 /* ---------- Public (invitation page) ---------- */
 function guestInfo_(code) {
   const s = readSettings_();
-  const settings = { rsvpBy: s.rsvpBy, rsvpByText: s.rsvpByText };
+  const settings = { rsvpBy: s.rsvpBy, rsvpByText: s.rsvpByText, song: s.song || '' };
   const row = code ? findRow_(code) : -1;
   if (row < 0) return { ok: true, guest: null, settings };
   const g = rowToObj_(row);

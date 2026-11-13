@@ -50,7 +50,7 @@ const CONFIG = {
   nextDelay: 2.5,
 
   // Song: put the MP3 in a "music" folder next to this file, e.g. "music/song.mp3". Empty = placeholder.
-  music: "music/song.mp3",
+  music: "music/Oru-Venal-Puzhayil.mp3",
 
   // Pictures: put files in an "images" folder and write the path. Empty = drawn decoration is used.
   images: {
@@ -491,6 +491,7 @@ if (API){
     const j = await r.json();
     if (j.ok){
       if (j.settings && j.settings.rsvpBy){ C.rsvpBy = j.settings.rsvpBy; C.rsvpByText = j.settings.rsvpByText || C.rsvpByText; }
+      if (j.settings && j.settings.song) C.music = "music/" + encodeURIComponent(j.settings.song);
       if (j.guest){ G0 = { name: j.guest.name, max: j.guest.max }; PRIOR = j.guest.wedding; }
     }
   } catch(e){}

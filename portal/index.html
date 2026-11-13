@@ -378,6 +378,22 @@ function openEditor(g0){
   };
 }
 
+/* ---------- Songs (MP3 files in the repo's music folder) ---------- */
+const REPO = "pirakashai/wedding-invitation";
+async function loadSongs(){
+  const sel = $("s_song"), cur = DATA.settings.song || "Oru-Venal-Puzhayil.mp3";
+  let files = [];
+  try {
+    const ac = new AbortController(); setTimeout(() => ac.abort(), 6000);
+    const r = await fetch("https://api.github.com/repos/" + REPO + "/contents/music", { signal: ac.signal });
+    if (r.ok) files = (await r.json()).filter(f => f.type === "file" && /\.mp3$/i.test(f.name)).map(f => f.name);
+  } catch(e){}
+  if (!files.length) files = [cur];
+  if (!files.includes(cur)) files.unshift(cur);
+  const label = f => f.replace(/\.mp3$/i, "").replace(/[-_]+/g, " ");
+  sel.innerHTML = files.map(f => `<option value="${esc(f)}" ${f===cur?"selected":""}>${esc(label(f))}</option>`).join("");
+}
+
 /* ---------- Settings ---------- */
 function renderSettings(){
   const s = DATA.settings;
@@ -386,6 +402,10 @@ function renderSettings(){
     <div class="card">
       <label class="f">Reply-by date</label><input type="date" id="s_by" value="${esc(s.rsvpBy)}">
       <label class="f">Invitation website address</label><input type="text" id="s_url" value="${esc(s.siteUrl)}">
+      <label class="f">Invitation song</label>
+      <div style="display:flex;gap:8px"><select id="s_song"><option value="">Loading songs…</option></select><button class="btn" id="s_play" type="button" style="white-space:nowrap">▶ Play</button></div>
+      <p class="sub" style="margin-top:6px">Add more songs by uploading MP3 files to the music folder on GitHub. They appear here automatically.</p>
+      <audio id="s_audio" preload="none"></audio>
       <label class="f">Groups (one per line)</label><textarea id="s_groups">${esc(groups().join("\n"))}</textarea>
       <label class="f">WhatsApp message · {name}, {link} and {rsvpBy} fill in automatically</label><textarea id="s_wa" style="min-height:260px">${esc(s.waTemplate)}</textarea>
       <div class="err" id="sErr"></div>
@@ -396,15 +416,23 @@ function renderSettings(){
     <div class="actions" style="margin:22px 0"><button class="btn danger" id="logout" type="button">Sign out of this device</button></div>`;
   const prev = () => { const t = { name: "Kamala Aunty", code: "abc123" }; const old = DATA.settings.waTemplate; DATA.settings.waTemplate = $("s_wa").value; $("waPrev").textContent = waText(t); DATA.settings.waTemplate = old; };
   prev(); $("s_wa").oninput = prev;
+  loadSongs();
   $("sSave").onclick = async () => {
     const by = $("s_by").value;
     const byText = by ? new Date(by + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
     const gr = $("s_groups").value.split("\n").map(x=>x.trim()).filter(Boolean).join("|");
     $("sSave").disabled = true;
-    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groups: gr, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
+    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groups: gr, song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
     catch(e){ $("sErr").textContent = e.message; }
     $("sSave").disabled = false;
   };
+  $("s_play").onclick = () => {
+    const a = $("s_audio"), f = $("s_song").value; if (!f) return;
+    if (!a.paused && a.dataset.f === f){ a.pause(); $("s_play").textContent = "▶ Play"; return; }
+    a.src = "../music/" + encodeURIComponent(f); a.dataset.f = f;
+    a.play().then(() => $("s_play").textContent = "❚❚ Pause").catch(() => toast("Couldn't play this file"));
+  };
+  $("s_song").onchange = () => { $("s_audio").pause(); $("s_play").textContent = "▶ Play"; };
   $("logout").onclick = () => { try{ localStorage.removeItem("wpw"); sessionStorage.removeItem("wpw"); }catch(e){} location.reload(); };
 }
 })();
