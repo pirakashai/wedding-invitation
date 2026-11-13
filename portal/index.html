@@ -174,10 +174,14 @@ function status(g, ev){
   if (!g.sentAt) return { k: "unsent", label: "Not sent", cls: "b-ns" };
   return { k: "pending", label: "No reply", cls: "b-pe" };
 }
+const groupDates = () => { try { return JSON.parse(DATA.settings.groupDeadlines || "{}"); } catch(e){ return {}; } };
+const fmtDate = d => d ? new Date(d + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
+const deadlineOf = g => (g && g.rsvpBy) || (g && groupDates()[g.group]) || DATA.settings.rsvpBy || "";
+function deadlineLabel(g){ const gd = g && groupDates()[g.group]; return gd ? `the ${g.group} date, ${fmtDate(gd)}` : `the default date, ${fmtDate(DATA.settings.rsvpBy)}`; }
 const link = g => (DATA.settings.siteUrl || "").replace(/\/?$/, "/") + "?g=" + g.code;
 function waText(g){
   return String(DATA.settings.waTemplate || "Dear {name}, {link}")
-    .replaceAll("{name}", g.name).replaceAll("{link}", link(g)).replaceAll("{rsvpBy}", DATA.settings.rsvpByText || "");
+    .replaceAll("{name}", g.name).replaceAll("{link}", link(g)).replaceAll("{rsvpBy}", fmtDate(deadlineOf(g)) || DATA.settings.rsvpByText || "");
 }
 const waUrl = g => "https://wa.me/" + normPhone(g.phone) + "?text=" + encodeURIComponent(waText(g));
 function sideMatch(g, side){ return g.side === side || g.side === "Shared"; }
@@ -317,6 +321,7 @@ function openEditor(g0){
     </div>
     <label class="f">WhatsApp number</label><input type="tel" id="e_phone" value="${esc(g.phone)}" placeholder="077 123 4567">
     <label class="f">Notes</label><input type="text" id="e_notes" value="${esc(g.notes)}" placeholder="Optional">
+    <label class="f">Reply-by date for this guest (leave empty to use ${esc(deadlineLabel(g))})</label><input type="date" id="e_by" value="${esc(g.rsvpBy || "")}">
     ${replyBlock("w","Wedding")}${replyBlock("r","Reception")}
     <div id="dupBox"></div>
     <div class="err" id="eErr"></div>
@@ -343,7 +348,7 @@ function openEditor(g0){
   $("saveBtn").onclick = async () => {
     $("eErr").textContent = "";
     const upd = { code: g.code || "", name: $("e_name").value.trim(), side: $("e_side").value, group: $("e_group").value,
-      invitedTo: $("e_inv").value, max: Math.max(1, num($("e_max").value)), phone: $("e_phone").value.trim(), notes: $("e_notes").value.trim() };
+      invitedTo: $("e_inv").value, max: Math.max(1, num($("e_max").value)), phone: $("e_phone").value.trim(), notes: $("e_notes").value.trim(), rsvpBy: $("e_by").value };
     if (!upd.name){ $("eErr").textContent = "Enter a name."; return; }
     ["w","r"].forEach(ev => {
       if (!invited(upd, ev)) return;
@@ -400,12 +405,19 @@ function renderSettings(){
   $("main").innerHTML = `
     <h2>Settings</h2>
     <div class="card">
-      <label class="f">Reply-by date</label><input type="date" id="s_by" value="${esc(s.rsvpBy)}">
+      <label class="f">Default reply-by date</label><input type="date" id="s_by" value="${esc(s.rsvpBy)}">
+      <label class="f">Reply-by date per group · leave empty to use the default</label>
+      <div id="s_gd">${groups().map(gr => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="flex:1;font-size:14px">${esc(gr)}</span><input type="date" data-gd="${esc(gr)}" value="${esc(groupDates()[gr] || "")}" style="width:170px"></div>`).join("")}</div>
+      <p class="sub">After a guest's date, their link still shows the invitation, but replying closes and they're asked to contact you. You can still enter their reply here.</p>
       <label class="f">Default number of people per new invitation</label><input type="number" min="1" id="s_max" value="${esc(num(s.defaultMax) || 2)}">
       <label class="f">Invitation website address</label><input type="text" id="s_url" value="${esc(s.siteUrl)}">
       <label class="f">Invitation song</label>
       <div style="display:flex;gap:8px"><select id="s_song"><option value="">Loading songs…</option></select><button class="btn" id="s_play" type="button" style="white-space:nowrap">▶ Play</button></div>
-      <p class="sub" style="margin-top:6px">Add more songs by uploading MP3 files to the music folder on GitHub. They appear here automatically.</p>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="file" id="s_file" accept="audio/mpeg,.mp3" hidden><button class="btn" id="s_upBtn" type="button">⤒ Upload song</button><span class="sub" id="s_upMsg"></span></div>
+      <div id="s_gh" style="margin-top:10px" hidden>
+        <label class="f">GitHub key (needed once for uploading songs)</label>
+        <div style="display:flex;gap:8px"><input type="password" id="s_tok" placeholder="github_pat_…" autocomplete="off"><button class="btn" id="s_tokBtn" type="button">Save key</button></div>
+      </div>
       <audio id="s_audio" preload="none"></audio>
       <label class="f">Groups (one per line)</label><textarea id="s_groups">${esc(groups().join("\n"))}</textarea>
       <label class="f">WhatsApp message · {name}, {link} and {rsvpBy} fill in automatically</label><textarea id="s_wa" style="min-height:260px">${esc(s.waTemplate)}</textarea>
@@ -423,7 +435,7 @@ function renderSettings(){
     const byText = by ? new Date(by + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
     const gr = $("s_groups").value.split("\n").map(x=>x.trim()).filter(Boolean).join("|");
     $("sSave").disabled = true;
-    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groups: gr, defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
+    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groups: gr, groupDeadlines: JSON.stringify(Object.fromEntries([...document.querySelectorAll("[data-gd]")].filter(i => i.value).map(i => [i.dataset.gd, i.value]))), defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
     catch(e){ $("sErr").textContent = e.message; }
     $("sSave").disabled = false;
   };
@@ -432,6 +444,28 @@ function renderSettings(){
     if (!a.paused && a.dataset.f === f){ a.pause(); $("s_play").textContent = "▶ Play"; return; }
     a.src = "../music/" + encodeURIComponent(f); a.dataset.f = f;
     a.play().then(() => $("s_play").textContent = "❚❚ Pause").catch(() => toast("Couldn't play this file"));
+  };
+  call("githubStatus").then(j => { $("s_gh").hidden = !!j.hasToken; }).catch(() => {});
+  $("s_tokBtn").onclick = async () => {
+    $("sErr").textContent = ""; $("s_tokBtn").disabled = true;
+    try { await call("setGithubToken", { token: $("s_tok").value }); $("s_tok").value = ""; $("s_gh").hidden = true; toast("GitHub key saved"); }
+    catch(e){ $("sErr").textContent = e.message; }
+    $("s_tokBtn").disabled = false;
+  };
+  $("s_upBtn").onclick = () => $("s_file").click();
+  $("s_file").onchange = async () => {
+    const f = $("s_file").files[0]; if (!f) return;
+    $("sErr").textContent = "";
+    if (f.size > 10 * 1024 * 1024){ $("sErr").textContent = "Choose an MP3 under 10 MB."; return; }
+    $("s_upBtn").disabled = true; $("s_upMsg").textContent = "Uploading…";
+    try {
+      const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(f); });
+      const j = await call("uploadSong", { name: f.name, data: b64 });
+      $("s_upMsg").textContent = "Uploaded. It appears in the list in about a minute.";
+      DATA.settings.song = DATA.settings.song || j.file;
+      setTimeout(loadSongs, 60000);
+    } catch(e){ $("sErr").textContent = e.message; $("s_upMsg").textContent = ""; if (/GitHub key/.test(e.message)) $("s_gh").hidden = false; }
+    $("s_upBtn").disabled = false; $("s_file").value = "";
   };
   $("s_song").onchange = () => { $("s_audio").pause(); $("s_play").textContent = "▶ Play"; };
   $("logout").onclick = () => { try{ localStorage.removeItem("wpw"); sessionStorage.removeItem("wpw"); }catch(e){} location.reload(); };

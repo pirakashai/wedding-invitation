@@ -217,6 +217,16 @@ textarea{min-height:48px;resize:vertical}
 #rsvp h2{font-size:40px}
 .err{color:#a3262f;font-size:15px;min-height:20px;margin-top:6px}
 #rsvpDone{display:none;max-width:320px}
+#wbBox{position:relative}
+#gate .btn.ghost{background:rgba(251,244,230,.9)}
+.wb-reply{font-family:Marcellus,serif;color:var(--maroon);font-size:16px;letter-spacing:.03em;max-width:300px;margin:4px auto 0}
+.wb-note{color:var(--muted);font-style:italic;font-size:16px;max-width:300px;margin:12px auto 0}
+#rsvpClosed{max-width:340px;width:100%}
+.closed-msg{font-style:italic;color:var(--ink);margin:6px 0 10px}
+.closed-prior{font-family:Marcellus,serif;color:var(--maroon);font-size:15px;margin-bottom:8px}
+#rsvpClosed .cards{margin-top:6px;gap:10px}
+#rsvpClosed .card{padding:12px}
+#rsvpClosed .card .cn{font-size:30px}
 #rsvpDone .script{font-size:46px;color:var(--maroon)}
 .when-yes{transition:opacity .3s}
 
@@ -287,6 +297,14 @@ textarea{min-height:48px;resize:vertical}
   <h1 id="gateNames"></h1>
   <p class="sub" id="gateDate"></p>
   <button class="btn pulse" id="openBtn" type="button">Open invitation</button>
+  <div id="wbBox" hidden>
+    <p class="wb-reply" id="wbReply"></p>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="wbChange" type="button">Change my reply</button>
+      <button class="btn ghost" id="wbView" type="button">View invitation</button>
+    </div>
+    <p class="wb-note" id="wbNote" hidden>Replies have closed. To change anything, please contact us directly.</p>
+  </div>
   
 </div>
 
@@ -379,8 +397,8 @@ textarea{min-height:48px;resize:vertical}
   <section id="rsvp">
     <div class="frame"></div>
     <div class="caps reveal">RSVP</div>
-    <h2 class="reveal d1">Will you join us?</h2>
-    <p class="reveal d1" style="font-style:italic;color:var(--muted)">Kindly let us know, so we can prepare to welcome you.</p>
+    <h2 class="reveal d1" id="rsvpH">Will you join us?</h2>
+    <p class="reveal d1" id="rsvpIntro" style="font-style:italic;color:var(--muted)">Kindly let us know, so we can prepare to welcome you.</p>
     <div class="by reveal d1" id="rsvpBy"></div>
     <form id="rsvpForm" class="reveal d2" novalidate>
       <div class="choice">
@@ -402,6 +420,11 @@ textarea{min-height:48px;resize:vertical}
       <div class="err" id="rErr"></div>
       <div class="row" style="margin-top:6px;flex-wrap:nowrap"><button class="btn" type="submit" id="rBtn">Send reply</button><a href="#" class="btn ghost" id="rLater">Later →</a></div>
     </form>
+    <div id="rsvpClosed" hidden>
+      <p class="closed-msg">Our reply date has passed. Apologies for the inconvenience. Please let us know directly, and we'll gladly take care of it.</p>
+      <p class="closed-prior" id="closedPrior" hidden></p>
+      <div class="cards" id="closedCards"></div>
+    </div>
     <div id="rsvpDone">
       <div class="script" id="doneTitle">Thank you</div>
       <p id="doneMsg" style="color:var(--muted);font-style:italic"></p>
@@ -528,7 +551,7 @@ try {
   if (!code && location.hash.startsWith("#g-")) code = location.hash.slice(3);
 } catch(e){}
 const API = window.WEDDING_API || "";
-let G0 = C.guests[code] || null, PRIOR = null;
+let G0 = C.guests[code] || null, PRIOR = null, CLOSED = null;
 if (API){
   $("openBtn").disabled = true; $("openBtn").textContent = "Loading…";
   try {
@@ -536,6 +559,7 @@ if (API){
     const j = await r.json();
     if (j.ok){
       if (j.settings && j.settings.rsvpBy){ C.rsvpBy = j.settings.rsvpBy; C.rsvpByText = j.settings.rsvpByText || C.rsvpByText; }
+      if (j.settings && typeof j.settings.closed === "boolean") CLOSED = j.settings.closed;
       if (j.settings && j.settings.song) C.music = "music/" + encodeURIComponent(j.settings.song);
       if (j.guest){ G0 = { name: j.guest.name, max: j.guest.max }; PRIOR = j.guest.wedding; }
     }
@@ -638,7 +662,7 @@ function go(i){
   [...$("dots").children].forEach((d,k) => d.classList.toggle("on", k === i));
   $("backBtn").classList.toggle("show", i > 0);
   const nb = $("nextBtn"); nb.classList.remove("show");
-  const onRsvp = p.id === "rsvp" && $("rsvpDone").style.display !== "block";
+  const onRsvp = p.id === "rsvp" && $("rsvpDone").style.display !== "block" && $("rsvpClosed").hidden;
   if (i < pages.length - 1 && !onRsvp) nextTimer = setTimeout(() => nb.classList.add("show"), C.nextDelay * 1000);
   setArt(p);
 }
@@ -657,18 +681,38 @@ function setArt(p){
 if (I.gate){ $("artA").style.backgroundImage = `url("${I.gate}")`; $("artA").classList.add("on"); artNow = I.gate; artFlip = true; }
 
 /* ---------- Open ---------- */
-$("openBtn").onclick = () => {
+function openInv(startId){
   $("gate").classList.add("hide");
   play(); petals(28);
-  $("nav").hidden = false; go(0);
+  $("nav").hidden = false;
+  const i = startId ? pages.findIndex(x => x.id === startId) : 0;
+  go(Math.max(0, i));
   setTimeout(()=>$("gate").remove(), 1200);
-};
+}
+$("openBtn").onclick = () => openInv();
+$("wbView").onclick = () => openInv();
+$("wbChange").onclick = () => { editReply(); openInv("rsvp"); };
 
 /* ---------- RSVP ---------- */
-const late = new Date() > new Date(C.rsvpBy + "T23:59:59+05:30");
-$("rsvpBy").textContent = late
-  ? "Our reply date has passed, but we'd still love to hear from you"
-  : "Kindly reply by " + C.rsvpByText;
+if (CLOSED === null) CLOSED = !!C.rsvpBy && new Date() > new Date(C.rsvpBy + "T23:59:59+05:30");
+$("rsvpBy").textContent = "Kindly reply by " + C.rsvpByText;
+let LAST = null;
+const replyText = d => d.attending === "yes"
+  ? `You're coming · ${d.total} ${d.total===1?"person":"people"} (${d.veg} veg, ${d.nonveg} non-veg)`
+  : "You let us know you can't come";
+const digitsOf = p => p.replace(/[^\d]/g,"");
+function showClosed(){
+  $("rsvpForm").style.display = "none"; $("rsvpDone").style.display = "none"; $("rsvpBy").hidden = true;
+  $("rsvpClosed").hidden = false; $("rsvpIntro").hidden = true; $("rsvpH").textContent = "Let's talk";
+  if (LAST){ $("closedPrior").textContent = replyText(LAST) + "."; $("closedPrior").hidden = false; }
+  const who = G0 ? G0.name : "a guest";
+  $("closedCards").innerHTML = C.contacts.map(c => {
+    const msg = encodeURIComponent(`Hi ${c.name}, this is ${who}. About the wedding RSVP: `);
+    return `<div class="card"><div class="cn">${c.name}</div><div class="cp">${c.phone}</div>
+      <div class="row"><a class="btn" href="https://wa.me/${digitsOf(c.phone)}?text=${msg}" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn ghost" href="tel:+${digitsOf(c.phone)}">Call</a></div></div>`;
+  }).join("");
+}
 const cnt = {veg:0, nv:0};
 function showTotal(){
   const t = cnt.veg + cnt.nv;
@@ -703,7 +747,7 @@ form.addEventListener("submit", async ev => {
   if (API){
     try {
       const r = await fetch(API, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(Object.assign({ action:"rsvp", event:"wedding" }, data)) });
-      const j = await r.json(); if (!j.ok) err = j.error || "Couldn't send.";
+      const j = await r.json(); if (!j.ok){ if (j.closed){ CLOSED = true; showClosed(); $("rBtn").textContent = "Send reply"; $("rBtn").disabled = false; $("nextBtn").classList.add("show"); return; } err = j.error || "Couldn't send."; }
     } catch(e){ err = "Couldn't send. Check your connection and try again."; }
   }
   $("rBtn").textContent = "Send reply"; $("rBtn").disabled = false;
@@ -712,7 +756,9 @@ form.addEventListener("submit", async ev => {
   showDone(data);
 });
 function showDone(d){
+  LAST = d;
   form.style.display = "none"; $("rsvpDone").style.display = "block"; $("rsvpBy").hidden = true;
+  $("rEdit").hidden = !!CLOSED;
   $("doneTitle").textContent = d.attending === "yes" ? "See you there" : "Thank you";
   $("doneMsg").textContent = (d.attending === "yes"
     ? `We've noted ${d.total} ${d.total===1?"person":"people"} (${d.veg} veg, ${d.nonveg} non-veg). We can't wait to celebrate with you.`
@@ -722,12 +768,29 @@ function showDone(d){
   if (typeof cur !== "undefined" && pages[cur] && pages[cur].id === "rsvp") $("nextBtn").classList.add("show");
 }
 $("rLater").onclick = e => { e.preventDefault(); go(cur + 1); };
-$("rEdit").onclick = () => { form.style.display = "block"; $("rsvpDone").style.display = "none"; $("rsvpBy").hidden = false; };
+function editReply(){
+  form.style.display = "block"; $("rsvpDone").style.display = "none"; $("rsvpBy").hidden = false;
+  if (LAST){
+    form.querySelector(`input[name=att][value=${LAST.attending}]`).checked = true;
+    cnt.veg = LAST.veg || 0; cnt.nv = LAST.nonveg || 0; $("veg").textContent = cnt.veg; $("nv").textContent = cnt.nv; showTotal();
+    $("countWrap").hidden = LAST.attending !== "yes";
+    if (LAST.message) $("rMsg").value = LAST.message;
+  }
+}
+$("rEdit").onclick = editReply;
 if (PRIOR && (PRIOR.status === "Attending" || PRIOR.status === "Declined")){
   const v = parseInt(PRIOR.veg,10)||0, n = parseInt(PRIOR.nonveg,10)||0;
-  showDone({ attending: PRIOR.status === "Attending" ? "yes" : "no", veg: v, nonveg: n, total: v + n });
-} else {
+  showDone({ attending: PRIOR.status === "Attending" ? "yes" : "no", veg: v, nonveg: n, total: v + n, message: PRIOR.message || "" });
+} else if (!API) {
   try { const saved = JSON.parse(localStorage.getItem("rsvp-" + code) || "null"); if (saved) showDone(saved); } catch(e){}
+}
+if (CLOSED) showClosed();
+// Welcome back: guest has replied before
+if (G0 && LAST){
+  $("gateCaps").textContent = "Welcome back";
+  $("openBtn").hidden = true; $("wbBox").hidden = false;
+  $("wbReply").textContent = replyText(LAST);
+  if (CLOSED){ $("wbChange").hidden = true; $("wbNote").hidden = false; }
 }
 })();
 </script>
