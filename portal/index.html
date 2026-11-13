@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Wedding portal · Pirakash & Shageepana</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Great+Vibes&display=swap" rel="stylesheet">
+<script src="../config.js"></script>
+<style>
+:root{--m:#7a1d2c;--m2:#5a1420;--g:#b8862f;--bg:#f7f3ee;--card:#fff;--line:#e8dfd4;--ink:#2b211c;--mut:#7d6f66;
+  --ok:#2f6b1e;--okb:#e6f2dc;--no:#9b2727;--nob:#fbe7e7;--pe:#7a5306;--peb:#fbefd6;--ns:#4b5563;--nsb:#eef0f3}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45;padding-bottom:84px}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding:0 14px}
+header{background:var(--m);color:#fff;padding:14px 0 12px;position:sticky;top:0;z-index:20}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px}
+header .t{font-family:"Great Vibes",cursive;font-size:28px;line-height:1}
+header .s{font-size:12px;opacity:.8}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-weight:500;font-size:14px;text-decoration:none;color:var(--ink)}
+.btn.p{background:var(--m);border-color:var(--m);color:#fff}
+.btn.wa{background:#1f8f4e;border-color:#1f8f4e;color:#fff}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+.btn.danger{color:var(--no);border-color:#efc9c9}
+.btn:disabled{opacity:.55}
+h2{font-size:18px;font-weight:600;margin:18px 0 10px}
+h3{font-size:15px;font-weight:600;margin:14px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:640px){.grid.g4{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat span{font-size:12.5px;color:var(--mut)}
+.stat b{display:block;font-size:24px;font-weight:600;margin-top:2px}
+.stat small{color:var(--mut);font-size:12px}
+.seg{display:inline-flex;background:#ece4da;border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500;font-size:14px;color:var(--mut)}
+.seg button.on{background:#fff;color:var(--m);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--m);border-color:var(--m);color:#fff}
+.chip i{font-style:normal;opacity:.7;margin-left:4px}
+input[type=text],input[type=tel],input[type=password],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}
+textarea{min-height:90px;resize:vertical}
+label.f{display:block;font-size:12.5px;color:var(--mut);margin:10px 0 4px;font-weight:500}
+.list{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:1px solid var(--line);cursor:pointer}
+.row:first-child{border-top:0}
+.row:active{background:#faf6f1}
+.row .n{flex:1;min-width:0}
+.row .n b{font-weight:500;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .n small{color:var(--mut);font-size:12.5px}
+.badge{font-size:11.5px;font-weight:500;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.b-ok{background:var(--okb);color:var(--ok)}.b-no{background:var(--nob);color:var(--no)}
+.b-pe{background:var(--peb);color:var(--pe)}.b-ns{background:var(--nsb);color:var(--ns)}
+.empty{padding:24px;text-align:center;color:var(--mut)}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);z-index:20}
+nav.tabs .wrap{display:grid;grid-template-columns:repeat(4,1fr)}
+nav.tabs button{border:0;background:none;padding:10px 4px 12px;cursor:pointer;font-size:12px;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:3px}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button.on{color:var(--m);font-weight:600}
+.panel{position:fixed;inset:0;background:rgba(30,15,10,.4);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px 28px}
+.sheet .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.sheet .top b{font-size:17px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.warn{background:var(--peb);border:1px solid #f0d49a;color:var(--pe);border-radius:12px;padding:12px;margin-top:12px;font-size:14px}
+.err{color:var(--no);font-size:14px;margin-top:8px;min-height:18px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{text-align:left;padding:8px 6px;border-top:1px solid var(--line)}
+.tbl th{font-weight:500;color:var(--mut);font-size:12.5px;border-top:0}
+.tbl td.r,.tbl th.r{text-align:right}
+#toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;z-index:60;pointer-events:none}
+#toast.show{opacity:1}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login .card{width:100%;max-width:360px;text-align:center;padding:28px 22px}
+.login .t{font-family:"Great Vibes",cursive;font-size:40px;color:var(--m)}
+.sub{color:var(--mut);font-size:13.5px}
+.toolbar{display:flex;gap:8px;align-items:center;margin:12px 0 8px}
+.toolbar input{flex:1}
+.loading{opacity:.6;pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login" id="loginView">
+  <div class="card">
+    <div class="t">P ♥ S</div>
+    <p class="sub" style="margin:4px 0 18px">Wedding portal</p>
+    <form id="loginForm">
+      <input type="password" id="pw" placeholder="Password" autocomplete="current-password">
+      <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin:12px 0;font-size:14px;color:var(--mut)"><input type="checkbox" id="remember" checked> Keep me signed in on this device</label>
+      <button class="btn p" style="width:100%;justify-content:center" type="submit" id="loginBtn">Sign in</button>
+      <div class="err" id="loginErr"></div>
+    </form>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" hidden>
+  <header><div class="wrap">
+    <div><div class="t">Pirakash & Shageepana</div><div class="s" id="hdrSub">Wedding · 22 January 2027</div></div>
+    <button class="btn sm" id="refreshBtn" type="button" aria-label="Refresh">↻</button>
+  </div></header>
+  <main class="wrap" id="main"></main>
+  <nav class="tabs"><div class="wrap">
+    <button data-tab="overview" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM14 4h6v4h-6zM4 20h6v-4H4z"/></svg>Overview</button>
+    <button data-tab="Pirakash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Pirakash</button>
+    <button data-tab="Shageepana"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Shageepana</button>
+    <button data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.1a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Settings</button>
+  </div></nav>
+</div>
+
+<div class="panel" id="panel" hidden><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+const API = window.WEDDING_API || "";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let PW = "", DATA = { guests: [], settings: {} };
+const ui = { tab: "overview", event: "w", group: "All", filter: "All", q: "" };
+
+/* ---------- API ---------- */
+async function call(action, extra){
+  if (!API) throw new Error("The portal isn't connected yet. Add the Apps Script URL to config.js.");
+  const res = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(Object.assign({ action, pw: PW }, extra || {})) });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "Something went wrong");
+  return j;
+}
+let tt; function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2400); }
+
+/* ---------- Login ---------- */
+try { PW = localStorage.getItem("wpw") || sessionStorage.getItem("wpw") || ""; } catch(e){}
+$("loginForm").onsubmit = async e => {
+  e.preventDefault(); $("loginErr").textContent = "";
+  PW = $("pw").value; if (!PW){ $("loginErr").textContent = "Enter the password."; return; }
+  $("loginBtn").disabled = true; $("loginBtn").textContent = "Signing in…";
+  try {
+    await call("login");
+    try { ($("remember").checked ? localStorage : sessionStorage).setItem("wpw", PW); } catch(e){}
+    await start();
+  } catch(err){ $("loginErr").textContent = err.message === "Wrong password" ? "That password isn't right." : err.message; }
+  $("loginBtn").disabled = false; $("loginBtn").textContent = "Sign in";
+};
+async function start(){
+  await load();
+  $("loginView").hidden = true; $("app").hidden = false; render();
+}
+async function load(){
+  const j = await call("list"); DATA.guests = j.guests; DATA.settings = j.settings;
+}
+if (PW) start().catch(() => { PW = ""; try{ localStorage.removeItem("wpw"); sessionStorage.removeItem("wpw"); }catch(e){} });
+$("refreshBtn").onclick = async () => { document.body.classList.add("loading"); try { await load(); render(); toast("Updated"); } catch(e){ toast(e.message); } document.body.classList.remove("loading"); };
+
+/* ---------- Helpers ---------- */
+const groups = () => String(DATA.settings.groups || "").split("|").map(s=>s.trim()).filter(Boolean);
+const invited = (g, ev) => g.invitedTo === "Both" || g.invitedTo === (ev === "w" ? "Wedding" : "Reception");
+const num = v => parseInt(v, 10) || 0;
+const normPhone = p => { let d = String(p||"").replace(/\D/g,""); if (d.startsWith("0")) d = "94" + d.slice(1); if (d.length === 9) d = "94" + d; return d; };
+function status(g, ev){
+  ev = ev || ui.event;
+  if (!invited(g, ev)) return { k: "na", label: g.invitedTo === "Undecided" ? "Undecided" : "Not invited", cls: "b-ns" };
+  const s = g[ev+"_status"];
+  if (s === "Attending") return { k: "yes", label: "Coming", cls: "b-ok" };
+  if (s === "Declined") return { k: "no", label: "Not coming", cls: "b-no" };
+  if (!g.phone) return { k: "nonum", label: "Needs number", cls: "b-ns" };
+  if (!g.sentAt) return { k: "unsent", label: "Not sent", cls: "b-ns" };
+  return { k: "pending", label: "No reply", cls: "b-pe" };
+}
+const link = g => (DATA.settings.siteUrl || "").replace(/\/?$/, "/") + "?g=" + g.code;
+function waText(g){
+  return String(DATA.settings.waTemplate || "Dear {name}, {link}")
+    .replaceAll("{name}", g.name).replaceAll("{link}", link(g)).replaceAll("{rsvpBy}", DATA.settings.rsvpByText || "");
+}
+const waUrl = g => "https://wa.me/" + normPhone(g.phone) + "?text=" + encodeURIComponent(waText(g));
+function sideMatch(g, side){ return g.side === side || g.side === "Shared"; }
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
+  ui.tab = b.dataset.tab; ui.group = "All"; ui.filter = "All"; ui.q = "";
+  document.querySelectorAll("nav.tabs button").forEach(x => x.classList.toggle("on", x === b));
+  render(); scrollTo(0,0);
+});
+function render(){
+  if (ui.tab === "overview") renderOverview();
+  else if (ui.tab === "settings") renderSettings();
+  else renderSide(ui.tab);
+}
+function evSeg(){
+  return `<div class="seg" id="evSeg"><button data-ev="w" class="${ui.event==="w"?"on":""}">Wedding</button><button data-ev="r" class="${ui.event==="r"?"on":""}">Reception</button></div>`;
+}
+function bindSeg(){ document.querySelectorAll("#evSeg button").forEach(b => b.onclick = () => { ui.event = b.dataset.ev; render(); }); }
+
+/* ---------- Overview ---------- */
+function totals(list, ev){
+  const t = { guests:0, people:0, yes:0, no:0, pend:0, unsent:0, nonum:0, veg:0, nv:0, replied:0 };
+  list.forEach(g => {
+    if (!invited(g, ev)) return;
+    const s = status(g, ev).k; t.guests++; t.people += num(g.max) || 1;
+    if (s === "yes"){ t.replied++; t.yes += num(g[ev+"_veg"]) + num(g[ev+"_nonveg"]); t.veg += num(g[ev+"_veg"]); t.nv += num(g[ev+"_nonveg"]); }
+    else if (s === "no"){ t.replied++; t.no++; }
+    else { t.pend++; if (s === "unsent") t.unsent++; if (s === "nonum") t.nonum++; }
+  });
+  return t;
+}
+function renderOverview(){
+  const ev = ui.event, t = totals(DATA.guests, ev);
+  const daysLeft = DATA.settings.rsvpBy ? Math.ceil((new Date(DATA.settings.rsvpBy + "T23:59:59+05:30") - new Date())/864e5) : null;
+  const sides = ["Pirakash","Shageepana","Shared"].concat(DATA.guests.some(g=>g.side==="Unlisted")?["Unlisted"]:[]);
+  let rows = "";
+  sides.forEach(s => { const x = totals(DATA.guests.filter(g=>g.side===s), ev); if (x.guests) rows += `<tr><td>${esc(s)}</td><td class="r">${x.guests}</td><td class="r">${x.yes}</td><td class="r">${x.veg}</td><td class="r">${x.nv}</td><td class="r">${x.pend}</td></tr>`; });
+  let grows = "";
+  groups().concat(["Replied without a personal link"]).forEach(gr => { const x = totals(DATA.guests.filter(g=>g.group===gr), ev); if (x.guests) grows += `<tr><td>${esc(gr)}</td><td class="r">${x.guests}</td><td class="r">${x.people}</td><td class="r">${x.yes}</td><td class="r">${x.pend}</td></tr>`; });
+  $("main").innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">${evSeg()}
+      <span class="sub">${daysLeft === null ? "" : daysLeft >= 0 ? daysLeft + " days to reply date" : "Reply date passed"}</span></div>
+    <div class="grid g4" style="margin-top:12px">
+      <div class="stat"><span>Invitations</span><b>${t.guests}</b><small>up to ${t.people} people</small></div>
+      <div class="stat"><span>Coming</span><b style="color:var(--ok)">${t.yes}</b><small>people, from ${t.replied - t.no} replies</small></div>
+      <div class="stat"><span>Not coming</span><b style="color:var(--no)">${t.no}</b><small>invitations</small></div>
+      <div class="stat"><span>Waiting for reply</span><b style="color:var(--pe)">${t.pend}</b><small>${t.unsent} not sent · ${t.nonum} need number</small></div>
+    </div>
+    <h2>Meals</h2>
+    <div class="grid"><div class="stat"><span>Vegetarian</span><b>${t.veg}</b></div><div class="stat"><span>Non-vegetarian</span><b>${t.nv}</b></div></div>
+    <p class="sub" style="margin-top:8px">From replies so far. ${t.pend} invitations haven't replied yet.</p>
+    <h2>By side</h2>
+    <div class="card" style="padding:6px 10px"><table class="tbl"><tr><th>Side</th><th class="r">Invites</th><th class="r">Coming</th><th class="r">Veg</th><th class="r">Non-veg</th><th class="r">Waiting</th></tr>${rows || `<tr><td colspan="6" class="sub">No invitations yet</td></tr>`}</table></div>
+    <h2>By group</h2>
+    <div class="card" style="padding:6px 10px"><table class="tbl"><tr><th>Group</th><th class="r">Invites</th><th class="r">Up to</th><th class="r">Coming</th><th class="r">Waiting</th></tr>${grows || `<tr><td colspan="5" class="sub">No invitations yet</td></tr>`}</table></div>
+    <h2>Waiting for a reply</h2>
+    <p class="sub" style="margin-bottom:8px">Invitations sent but not answered. Tap WhatsApp to send a gentle reminder.</p>
+    <div class="list" id="pendList"></div>`;
+  bindSeg();
+  const pend = DATA.guests.filter(g => status(g, ev).k === "pending");
+  $("pendList").innerHTML = pend.length ? pend.map(rowHtml).join("") : `<div class="empty">No one is waiting. 🎉</div>`;
+  bindRows($("pendList"));
+}
+
+/* ---------- Side view ---------- */
+function renderSide(side){
+  const base = DATA.guests.filter(g => sideMatch(g, side));
+  const gl = ["All"].concat(groups());
+  const counts = {}; base.forEach(g => counts[g.group] = (counts[g.group]||0) + 1);
+  const filters = [["All","All"],["unsent","Not sent"],["pending","No reply"],["yes","Coming"],["no","Not coming"],["nonum","Needs number"],["na","Not invited"]];
+  $("main").innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">${evSeg()}
+      <button class="btn p sm" id="addBtn" type="button">+ Add guest</button></div>
+    <div class="toolbar"><input type="text" id="q" placeholder="Search name or number" value="${esc(ui.q)}"></div>
+    <div class="chips" id="gChips">${gl.map(x => `<button class="chip ${ui.group===x?"on":""}" data-g="${esc(x)}">${esc(x)}<i>${x==="All"?base.length:(counts[x]||0)}</i></button>`).join("")}</div>
+    <div class="chips" id="fChips">${filters.map(([k,l]) => `<button class="chip ${ui.filter===k?"on":""}" data-f="${k}">${l}</button>`).join("")}</div>
+    <div class="sub" id="cnt" style="margin:2px 0 8px"></div>
+    <div class="list" id="gList"></div>`;
+  bindSeg();
+  $("addBtn").onclick = () => openEditor({ side, group: ui.group !== "All" ? ui.group : (groups()[0]||""), invitedTo: ui.event === "r" ? "Reception" : "Wedding", max: 1 });
+  $("q").oninput = e => { ui.q = e.target.value; drawList(base); };
+  document.querySelectorAll("#gChips .chip").forEach(b => b.onclick = () => { ui.group = b.dataset.g; renderSide(side); });
+  document.querySelectorAll("#fChips .chip").forEach(b => b.onclick = () => { ui.filter = b.dataset.f; renderSide(side); });
+  drawList(base);
+}
+function drawList(base){
+  const q = ui.q.trim().toLowerCase(), qd = q.replace(/\D/g,"");
+  const list = base.filter(g => (ui.group === "All" || g.group === ui.group)
+    && (ui.filter === "All" || status(g).k === ui.filter)
+    && (!q || String(g.name).toLowerCase().includes(q) || (qd.length > 3 && normPhone(g.phone).includes(qd))))
+    .sort((a,b) => String(a.name).localeCompare(String(b.name)));
+  $("cnt").textContent = `${list.length} guest${list.length===1?"":"s"}`;
+  $("gList").innerHTML = list.length ? list.map(rowHtml).join("") : `<div class="empty">No guests here yet.</div>`;
+  bindRows($("gList"));
+}
+function rowHtml(g){
+  const s = status(g), ev = ui.event;
+  const meals = s.k === "yes" ? `${num(g[ev+"_veg"])} veg · ${num(g[ev+"_nonveg"])} non-veg` : `${esc(g.group)} · up to ${num(g.max)||1}${g.side==="Shared"?" · Shared":""}`;
+  const canSend = g.phone && invited(g, ev) && (s.k === "unsent" || s.k === "pending");
+  return `<div class="row" data-code="${esc(g.code)}"><div class="n"><b>${esc(g.name)}</b><small>${meals}</small></div>
+    ${canSend ? `<a class="btn wa sm" data-wa="${esc(g.code)}" href="${esc(waUrl(g))}" target="_blank" rel="noopener">${s.k==="pending"?"Remind":"Send"}</a>` : ""}
+    <span class="badge ${s.cls}">${s.label}</span></div>`;
+}
+function bindRows(root){
+  root.querySelectorAll("[data-wa]").forEach(a => a.onclick = e => { e.stopPropagation(); markSent(a.dataset.wa); });
+  root.querySelectorAll(".row").forEach(r => r.onclick = () => openEditor(DATA.guests.find(g => g.code === r.dataset.code)));
+}
+async function markSent(code){
+  const g = DATA.guests.find(x => x.code === code); if (!g || g.sentAt) return;
+  g.sentAt = new Date().toISOString(); setTimeout(render, 400);
+  try { const j = await call("markSent", { code }); Object.assign(g, j.guest); } catch(e){ toast(e.message); }
+}
+
+/* ---------- Editor ---------- */
+function openEditor(g0){
+  const isNew = !g0.code, g = Object.assign({}, g0);
+  const opt = (arr, v) => arr.map(x => `<option ${String(x)===String(v)?"selected":""}>${esc(x)}</option>`).join("");
+  const replyBlock = (ev, title) => `
+    <div class="card" style="margin-top:12px" id="rep_${ev}" ${invited(g,ev)?"":"hidden"}>
+      <b>${title} reply</b> <span class="sub" id="src_${ev}">${g[ev+"_source"] ? "· from " + (g[ev+"_source"]==="guest"?"guest's RSVP":g[ev+"_source"]) : ""}</span>
+      <label class="f">Status</label><select id="st_${ev}">${opt(["Pending","Attending","Declined"], g[ev+"_status"]||"Pending")}</select>
+      <div class="two"><div><label class="f">Veg</label><input type="number" min="0" id="veg_${ev}" value="${num(g[ev+"_veg"])}"></div>
+        <div><label class="f">Non-veg</label><input type="number" min="0" id="nv_${ev}" value="${num(g[ev+"_nonveg"])}"></div></div>
+      ${g[ev+"_message"] ? `<p class="sub" style="margin-top:8px">Wish: “${esc(g[ev+"_message"])}”</p>` : ""}
+    </div>`;
+  $("sheet").innerHTML = `
+    <div class="top"><b>${isNew ? "Add guest" : "Edit guest"}</b><button class="btn sm" id="xBtn" type="button">Close</button></div>
+    <label class="f">Name (as shown on the invitation)</label><input type="text" id="e_name" value="${esc(g.name)}" placeholder="Kamala Aunty & family">
+    <div class="two">
+      <div><label class="f">Side</label><select id="e_side">${opt(["Pirakash","Shageepana","Shared","Unlisted"].filter(x=>x!=="Unlisted"||g.side==="Unlisted"), g.side)}</select></div>
+      <div><label class="f">Group</label><select id="e_group">${opt(groups().concat(groups().includes(g.group)||!g.group?[]:[g.group]), g.group)}</select></div>
+    </div>
+    <div class="two">
+      <div><label class="f">Invited to</label><select id="e_inv">${opt(["Wedding","Reception","Both","Undecided"], g.invitedTo)}</select></div>
+      <div><label class="f">Up to people</label><input type="number" min="1" id="e_max" value="${num(g.max)||1}"></div>
+    </div>
+    <label class="f">WhatsApp number</label><input type="tel" id="e_phone" value="${esc(g.phone)}" placeholder="077 123 4567">
+    <label class="f">Notes</label><input type="text" id="e_notes" value="${esc(g.notes)}" placeholder="Optional">
+    ${replyBlock("w","Wedding")}${replyBlock("r","Reception")}
+    <div id="dupBox"></div>
+    <div class="err" id="eErr"></div>
+    <div class="actions">
+      <button class="btn p" id="saveBtn" type="button">Save</button>
+      ${isNew ? "" : `<button class="btn" id="copyBtn" type="button">Copy link</button>
+      ${g.phone ? `<a class="btn wa" id="waBtn" href="${esc(waUrl(g))}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
+      <button class="btn danger" id="delBtn" type="button">Delete</button>`}
+    </div>
+    ${isNew ? "" : `<p class="sub" style="margin-top:12px">Link: ${esc(link(g))}${g.sentAt ? " · sent " + new Date(g.sentAt).toLocaleDateString() : ""}</p>`}`;
+  $("panel").hidden = false; document.body.style.overflow = "hidden";
+  const close = () => { $("panel").hidden = true; document.body.style.overflow = ""; };
+  $("xBtn").onclick = close; $("panel").onclick = e => { if (e.target === $("panel")) close(); };
+  $("e_inv").onchange = () => { const v = $("e_inv").value, t = {invitedTo:v}; $("rep_w").hidden = !invited(t,"w"); $("rep_r").hidden = !invited(t,"r"); };
+  if (!isNew){
+    $("copyBtn").onclick = async () => { try { await navigator.clipboard.writeText(link(g)); toast("Link copied"); } catch(e){ toast(link(g)); } };
+    if ($("waBtn")) $("waBtn").onclick = () => markSent(g.code);
+    $("delBtn").onclick = async () => {
+      if ($("delBtn").dataset.sure !== "1"){ $("delBtn").dataset.sure = "1"; $("delBtn").textContent = "Tap again to delete"; return; }
+      try { await call("delete", { code: g.code }); DATA.guests = DATA.guests.filter(x => x.code !== g.code); close(); render(); toast("Deleted"); } catch(e){ $("eErr").textContent = e.message; }
+    };
+  }
+  let dupOk = false;
+  $("saveBtn").onclick = async () => {
+    $("eErr").textContent = "";
+    const upd = { code: g.code || "", name: $("e_name").value.trim(), side: $("e_side").value, group: $("e_group").value,
+      invitedTo: $("e_inv").value, max: Math.max(1, num($("e_max").value)), phone: $("e_phone").value.trim(), notes: $("e_notes").value.trim() };
+    if (!upd.name){ $("eErr").textContent = "Enter a name."; return; }
+    ["w","r"].forEach(ev => {
+      if (!invited(upd, ev)) return;
+      const st = $("st_"+ev).value, veg = num($("veg_"+ev).value), nv = num($("nv_"+ev).value);
+      const changed = st !== (g[ev+"_status"]||"Pending") || veg !== num(g[ev+"_veg"]) || nv !== num(g[ev+"_nonveg"]);
+      upd[ev+"_status"] = st; upd[ev+"_veg"] = st === "Attending" ? veg : 0; upd[ev+"_nonveg"] = st === "Attending" ? nv : 0;
+      if (changed){ upd[ev+"_source"] = "manual"; upd[ev+"_at"] = new Date().toISOString(); }
+    });
+    for (const ev of ["w","r"]) if (invited(upd,ev) && upd[ev+"_status"] === "Attending" && upd[ev+"_veg"] + upd[ev+"_nonveg"] === 0){ $("eErr").textContent = "Add the veg and non-veg numbers for a guest who is coming."; return; }
+    // Duplicate check (same number, or same name on the other side)
+    if (!dupOk){
+      const p = normPhone(upd.phone), nm = upd.name.toLowerCase();
+      const d = DATA.guests.find(x => x.code !== upd.code && ((p.length >= 9 && normPhone(x.phone) === p) || (String(x.name).toLowerCase() === nm && x.side !== upd.side)));
+      if (d){
+        $("dupBox").innerHTML = `<div class="warn"><b>${esc(d.name)}</b> is already on ${esc(d.side)}'s list (${esc(d.group)})${p.length>=9 && normPhone(d.phone)===p ? " with the same number" : ""}.
+          <div class="actions" style="margin-top:10px"><button class="btn sm" id="mkShared" type="button">Use that guest, make it Shared</button><button class="btn sm" id="saveAny" type="button">Save as a separate guest</button></div></div>`;
+        $("mkShared").onclick = async () => {
+          try { const j = await call("save", { guest: { code: d.code, side: "Shared" } }); Object.assign(d, j.guest); close(); render(); toast(d.name + " is now Shared"); } catch(e){ $("eErr").textContent = e.message; }
+        };
+        $("saveAny").onclick = () => { dupOk = true; $("saveBtn").click(); };
+        return;
+      }
+    }
+    $("saveBtn").disabled = true; $("saveBtn").textContent = "Saving…";
+    try {
+      const j = await call("save", { guest: upd });
+      const i = DATA.guests.findIndex(x => x.code === j.guest.code);
+      if (i >= 0) DATA.guests[i] = j.guest; else DATA.guests.push(j.guest);
+      close(); render(); toast(isNew ? "Guest added" : "Saved");
+      if (isNew) openEditor(j.guest);
+    } catch(e){ $("eErr").textContent = e.message; $("saveBtn").disabled = false; $("saveBtn").textContent = "Save"; }
+  };
+}
+
+/* ---------- Settings ---------- */
+function renderSettings(){
+  const s = DATA.settings;
+  $("main").innerHTML = `
+    <h2>Settings</h2>
+    <div class="card">
+      <label class="f">Reply-by date</label><input type="date" id="s_by" value="${esc(s.rsvpBy)}">
+      <label class="f">Invitation website address</label><input type="text" id="s_url" value="${esc(s.siteUrl)}">
+      <label class="f">Groups (one per line)</label><textarea id="s_groups">${esc(groups().join("\n"))}</textarea>
+      <label class="f">WhatsApp message · {name}, {link} and {rsvpBy} fill in automatically</label><textarea id="s_wa" style="min-height:260px">${esc(s.waTemplate)}</textarea>
+      <div class="err" id="sErr"></div>
+      <div class="actions"><button class="btn p" id="sSave" type="button">Save settings</button></div>
+    </div>
+    <h2>Preview of the message</h2>
+    <div class="card" style="white-space:pre-wrap;font-size:14px" id="waPrev"></div>
+    <div class="actions" style="margin:22px 0"><button class="btn danger" id="logout" type="button">Sign out of this device</button></div>`;
+  const prev = () => { const t = { name: "Kamala Aunty", code: "abc123" }; const old = DATA.settings.waTemplate; DATA.settings.waTemplate = $("s_wa").value; $("waPrev").textContent = waText(t); DATA.settings.waTemplate = old; };
+  prev(); $("s_wa").oninput = prev;
+  $("sSave").onclick = async () => {
+    const by = $("s_by").value;
+    const byText = by ? new Date(by + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
+    const gr = $("s_groups").value.split("\n").map(x=>x.trim()).filter(Boolean).join("|");
+    $("sSave").disabled = true;
+    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groups: gr, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
+    catch(e){ $("sErr").textContent = e.message; }
+    $("sSave").disabled = false;
+  };
+  $("logout").onclick = () => { try{ localStorage.removeItem("wpw"); sessionStorage.removeItem("wpw"); }catch(e){} location.reload(); };
+}
+})();
+</script>
+</body>
+</html>

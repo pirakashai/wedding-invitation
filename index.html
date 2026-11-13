@@ -7,6 +7,7 @@
 <meta name="description" content="With joy we invite you to our wedding · 22 January 2027">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Marcellus&family=Noto+Serif+Tamil:wght@400;600&display=swap" rel="stylesheet">
+<script src="config.js"></script>
 <script>
 /* =========================================================
    EDIT EVERYTHING HERE. Nothing below this block needs changing.
@@ -60,14 +61,8 @@ const CONFIG = {
     thanks: ""     // closing picture
   },
 
-  // RSVP: the Google Apps Script web-app URL (added when we build the portal). Empty = preview mode.
-  rsvpUrl: "",
-
-  // Guests: code -> { name, max people, phone }. Filled from the portal later.
-  // Personal link: yoursite/?g=CODE   (in the claude.ai preview use  #g-CODE)
-  guests: {
-    "test01": { name: "Test Guest", max: 4, phone: "+94769650027" }
-  }
+  // Guests come from the portal (Google Sheet). This list is only used if the portal can't be reached.
+  guests: {}
 };
 </script>
 <style>
@@ -403,7 +398,7 @@ textarea{min-height:60px;resize:vertical}
 <audio id="audio" loop preload="none"></audio>
 
 <script>
-(function(){
+(async function(){
 const C = CONFIG, $ = id => document.getElementById(id);
 const G = "#b8862f", GL = "#e2c27a", M = "#7a1d2c", L = "#3f6b2c", O = "#e8912a", P = "#e58fa0";
 
@@ -487,7 +482,20 @@ try {
   code = new URLSearchParams(location.search).get("g") || "";
   if (!code && location.hash.startsWith("#g-")) code = location.hash.slice(3);
 } catch(e){}
-const G0 = C.guests[code] || null;
+const API = window.WEDDING_API || "";
+let G0 = C.guests[code] || null, PRIOR = null;
+if (API){
+  $("openBtn").disabled = true; $("openBtn").textContent = "Loading…";
+  try {
+    const r = await fetch(API + "?action=guest&code=" + encodeURIComponent(code));
+    const j = await r.json();
+    if (j.ok){
+      if (j.settings && j.settings.rsvpBy){ C.rsvpBy = j.settings.rsvpBy; C.rsvpByText = j.settings.rsvpByText || C.rsvpByText; }
+      if (j.guest){ G0 = { name: j.guest.name, max: j.guest.max }; PRIOR = j.guest.wedding; }
+    }
+  } catch(e){}
+  $("openBtn").disabled = false; $("openBtn").textContent = "Open invitation";
+}
 if (G0){
   $("gateFor").textContent = G0.name;
   $("guestName").textContent = "Dear " + G0.name;
@@ -629,13 +637,15 @@ form.addEventListener("submit", async ev => {
   const yes = att === "yes";
   const data = { code, name: nm, attending: att, veg: yes?cnt.veg:0, nonveg: yes?cnt.nv:0, total: yes?cnt.veg+cnt.nv:0, message: $("rMsg").value.trim(), at: new Date().toISOString() };
   $("rBtn").textContent = "Sending…"; $("rBtn").disabled = true;
-  let ok = true;
-  if (C.rsvpUrl){
-    try { await fetch(C.rsvpUrl, { method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain"}, body: JSON.stringify(data) }); }
-    catch(e){ ok = false; }
+  let err = "";
+  if (API){
+    try {
+      const r = await fetch(API, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(Object.assign({ action:"rsvp", event:"wedding" }, data)) });
+      const j = await r.json(); if (!j.ok) err = j.error || "Couldn't send.";
+    } catch(e){ err = "Couldn't send. Check your connection and try again."; }
   }
   $("rBtn").textContent = "Send reply"; $("rBtn").disabled = false;
-  if (!ok){ $("rErr").textContent = "Couldn't send. Check your connection and try again."; return; }
+  if (err){ $("rErr").textContent = err; return; }
   try { localStorage.setItem("rsvp-" + code, JSON.stringify(data)); } catch(e){}
   showDone(data);
 });
@@ -645,11 +655,16 @@ function showDone(d){
   $("doneMsg").textContent = (d.attending === "yes"
     ? `We've noted ${d.total} ${d.total===1?"person":"people"} (${d.veg} veg, ${d.nonveg} non-veg). We can't wait to celebrate with you.`
     : "We'll miss you, and we're grateful for your blessings.")
-    + (C.rsvpUrl ? "" : " (Preview: replies will reach us once the portal is connected.)");
+    + (API ? "" : " (Preview: replies will reach us once the portal is connected.)");
   if (d.attending === "yes") petals(18);
 }
 $("rEdit").onclick = () => { form.style.display = "block"; $("rsvpDone").style.display = "none"; $("rsvpBy").hidden = false; };
-try { const saved = JSON.parse(localStorage.getItem("rsvp-" + code) || "null"); if (saved) showDone(saved); } catch(e){}
+if (PRIOR && (PRIOR.status === "Attending" || PRIOR.status === "Declined")){
+  const v = parseInt(PRIOR.veg,10)||0, n = parseInt(PRIOR.nonveg,10)||0;
+  showDone({ attending: PRIOR.status === "Attending" ? "yes" : "no", veg: v, nonveg: n, total: v + n });
+} else {
+  try { const saved = JSON.parse(localStorage.getItem("rsvp-" + code) || "null"); if (saved) showDone(saved); } catch(e){}
+}
 })();
 </script>
 </body>
