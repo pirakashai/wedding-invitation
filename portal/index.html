@@ -258,7 +258,7 @@ function renderSide(side){
     <div class="sub" id="cnt" style="margin:2px 0 8px"></div>
     <div class="list" id="gList"></div>`;
   bindSeg();
-  $("addBtn").onclick = () => openEditor({ side, group: ui.group !== "All" ? ui.group : (groups()[0]||""), invitedTo: ui.event === "r" ? "Reception" : "Wedding", max: 1 });
+  $("addBtn").onclick = () => openEditor({ side, group: ui.group !== "All" ? ui.group : (groups()[0]||""), invitedTo: ui.event === "r" ? "Reception" : "Wedding", max: num(DATA.settings.defaultMax) || 2 });
   $("q").oninput = e => { ui.q = e.target.value; drawList(base); };
   document.querySelectorAll("#gChips .chip").forEach(b => b.onclick = () => { ui.group = b.dataset.g; renderSide(side); });
   document.querySelectorAll("#fChips .chip").forEach(b => b.onclick = () => { ui.filter = b.dataset.f; renderSide(side); });
@@ -401,6 +401,7 @@ function renderSettings(){
     <h2>Settings</h2>
     <div class="card">
       <label class="f">Reply-by date</label><input type="date" id="s_by" value="${esc(s.rsvpBy)}">
+      <label class="f">Default number of people per new invitation</label><input type="number" min="1" id="s_max" value="${esc(num(s.defaultMax) || 2)}">
       <label class="f">Invitation website address</label><input type="text" id="s_url" value="${esc(s.siteUrl)}">
       <label class="f">Invitation song</label>
       <div style="display:flex;gap:8px"><select id="s_song"><option value="">Loading songs…</option></select><button class="btn" id="s_play" type="button" style="white-space:nowrap">▶ Play</button></div>
@@ -422,7 +423,7 @@ function renderSettings(){
     const byText = by ? new Date(by + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
     const gr = $("s_groups").value.split("\n").map(x=>x.trim()).filter(Boolean).join("|");
     $("sSave").disabled = true;
-    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groups: gr, song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
+    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groups: gr, defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
     catch(e){ $("sErr").textContent = e.message; }
     $("sSave").disabled = false;
   };

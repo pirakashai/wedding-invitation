@@ -58,7 +58,8 @@ const CONFIG = {
     couple: "images/couple.jpg",      // couple illustration
     blessing: "images/blessing.jpg",  // background behind the Thirukkural
     venue: "images/venue.jpg",        // venue picture
-    thanks: ""     // closing picture
+    thanks: "",    // closing picture
+    vanakkam: "images/vanakkam.png" // folded hands (transparent PNG); emoji is shown until it exists
   },
 
   // Guests come from the portal (Google Sheet). This list is only used if the portal can't be reached.
@@ -146,12 +147,19 @@ h2{font-family:"Great Vibes",cursive;font-weight:400;font-size:52px;line-height:
 
 /* Invite */
 .guest{font-family:"Great Vibes",cursive;font-size:44px;color:var(--maroon);margin:10px 0;line-height:1.2}
-.names{margin:16px 0}
+.names{margin:6px 0}
+#invite{padding-top:40px;padding-bottom:96px}
+#invite .guest{font-size:36px;margin:2px 0}
+#invite .divider{margin:6px auto}
+@media (max-height:900px){#invite [data-art=lotus]{display:none}}
+#invite .names .n{font-size:42px;line-height:1.05}
+#invite .names .amp{font-size:28px;margin:0}
+#invite .names .full{font-size:11.5px}
 .names .n{font-family:"Great Vibes",cursive;font-size:50px;color:var(--maroon);line-height:1.15}
 .names .full{font-family:Marcellus,serif;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .names .amp{font-family:"Great Vibes",cursive;font-size:36px;color:var(--gold);margin:4px 0}
 .names .tan{font-family:"Noto Serif Tamil",serif;font-size:17px;color:var(--maroon-d)}
-.couple-img{width:200px;height:270px;object-fit:cover;object-position:50% 22%;border-radius:110px 110px 12px 12px;border:3px solid var(--gold-l);margin:10px 0 18px;box-shadow:0 10px 30px rgba(90,40,10,.18)}
+.couple-img{width:auto;height:min(240px,22svh);margin:6px 0 8px!important;aspect-ratio:200/270;object-fit:cover;object-position:50% 22%;border-radius:110px 110px 12px 12px;border:3px solid var(--gold-l);margin:10px 0 18px;box-shadow:0 10px 30px rgba(90,40,10,.18)}
 
 /* Calendar */
 .cal{background:rgba(255,255,255,.55);border:1px solid rgba(184,134,47,.4);border-radius:14px;padding:18px 16px 14px;width:100%;max-width:330px;margin:16px 0}
@@ -216,6 +224,11 @@ textarea{min-height:60px;resize:vertical}
 
 /* Thanks */
 .namaste{font-size:56px}
+.namaste-img{width:120px;height:120px;object-fit:contain}
+#gateMono,#gateMono2{display:flex;align-items:center;justify-content:center;gap:.12em}
+#gateMono span,#gateMono2 span{display:inline-block;line-height:1}
+#gateMono span:first-child,#gateMono2 span:first-child{margin-right:.08em}
+#gateMono .mh,#gateMono2 .mh{font-family:Georgia,serif;font-size:.62em;color:var(--maroon)}
 .thanks-img{width:100%;max-width:340px;border-radius:14px;margin-top:20px}
 
 /* Floating controls */
@@ -234,6 +247,22 @@ textarea{min-height:60px;resize:vertical}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.75;transform:scale(1.04)}}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
 @keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r));opacity:.2}}
+#art{display:none}
+@media (orientation:landscape) and (min-width:900px){
+  body{background:var(--cream)}
+  #art{display:block;position:fixed;left:0;top:0;bottom:0;width:50vw;z-index:1;background:var(--cream-d)}
+  #art .al{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.2s ease}
+  #art .al.on{opacity:1}
+  main{left:50vw;right:0;max-width:none;margin:0;box-shadow:-10px 0 40px rgba(120,60,20,.12)}
+  #nav{left:50vw}
+  #backBtn{left:calc(50vw + 16px)}
+  .couple-img,.venue-img{display:none!important}
+  #venueArt{display:none}
+  #gate,#gate.has-img{left:50vw;background:radial-gradient(ellipse at 50% 40%,#fffaf0 0%,var(--cream) 60%,var(--cream-d) 100%)!important}
+  #gate.has-img::before{display:none}
+  #gate.has-img .medal-wrap{display:flex}
+  #gate.has-img .gmono{display:none}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
 </style>
 </head>
@@ -255,6 +284,7 @@ textarea{min-height:60px;resize:vertical}
   
 </div>
 
+<div id="art" aria-hidden="true"><div class="al" id="artA"></div><div class="al" id="artB"></div></div>
 <main>
   <!-- 1. Blessing -->
   <section id="blessing" data-img="blessing">
@@ -351,7 +381,7 @@ textarea{min-height:60px;resize:vertical}
         <span class="fl">Your name</span>
         <input type="text" id="rName" placeholder="Your name" autocomplete="name">
       </div>
-      <div class="when-yes" id="countWrap">
+      <div class="when-yes" id="countWrap" hidden>
         <span class="fl">Meals for your party</span>
         <div class="counter"><span>Vegetarian</span><div><button type="button" data-c="veg" data-v="-1" aria-label="Fewer vegetarian">−</button> <output id="veg">0</output> <button type="button" data-c="veg" data-v="1" aria-label="More vegetarian">+</button></div></div>
         <div class="counter"><span>Non-vegetarian</span><div><button type="button" data-c="nv" data-v="-1" aria-label="Fewer non-vegetarian">−</button> <output id="nv">0</output> <button type="button" data-c="nv" data-v="1" aria-label="More non-vegetarian">+</button></div></div>
@@ -361,6 +391,7 @@ textarea{min-height:60px;resize:vertical}
       <textarea id="rMsg" placeholder="Wishing you a lifetime of happiness"></textarea>
       <div class="err" id="rErr"></div>
       <div class="row" style="margin-top:8px"><button class="btn" type="submit" id="rBtn">Send reply</button></div>
+      <p style="text-align:center;margin-top:14px"><a href="#" id="rLater" style="color:var(--muted);font-size:15px">Reply later, continue →</a></p>
     </form>
     <div id="rsvpDone">
       <div class="script" id="doneTitle">Thank you</div>
@@ -380,7 +411,7 @@ textarea{min-height:60px;resize:vertical}
   <!-- 9. Thanks -->
   <section id="thanks">
     <div class="frame"></div>
-    <div class="namaste reveal">🙏</div>
+    <div class="namaste reveal" id="namaste">🙏</div>
     <h2 class="reveal d1">Thank you</h2>
     <p class="reveal d2" style="font-style:italic;color:var(--muted);max-width:320px">We look forward to celebrating this blessed day with you.</p>
     <div class="script reveal d3" style="font-size:38px;color:var(--maroon);margin-top:14px" id="thanksNames"></div>
@@ -467,10 +498,12 @@ if (I.gate){ const g=$("gate"); g.style.backgroundImage=`url("${I.gate}")`; g.cl
 if (I.blessing){ const s=$("blessing"); s.style.backgroundImage=`linear-gradient(rgba(251,244,230,.45),rgba(251,244,230,.45)),url("${I.blessing}")`; }
 if (I.couple){ const i=$("coupleImg"); i.src=I.couple; i.hidden=false; }
 if (I.venue){ const i=$("venueImg"); i.src=I.venue; i.hidden=false; $("venueArt").style.display="none"; }
+if (I.vanakkam){ const im = new Image(); im.className = "namaste-img"; im.alt = "Vanakkam"; im.onload = () => { $("namaste").textContent = ""; $("namaste").appendChild(im); }; im.src = I.vanakkam; }
 if (I.thanks){ const i=$("thanksImg"); i.src=I.thanks; i.hidden=false; }
 
 /* ---------- Text from CONFIG ---------- */
-$("gateMono").textContent = C.monogram; $("gateMono2").textContent = C.monogram;
+const monoHtml = C.monogram.split("♥").map(x=>`<span>${x.trim()}</span>`).join('<span class="mh">♥</span>');
+$("gateMono").innerHTML = monoHtml; $("gateMono2").innerHTML = monoHtml;
 $("gateNames").textContent = `${C.groom.en} & ${C.bride.en}`;
 $("gateDate").textContent = C.dateText;
 $("groomN").textContent = C.groom.en; $("groomF").textContent = C.groom.full; $("groomT").textContent = C.groom.ta;
@@ -596,10 +629,23 @@ function go(i){
   [...$("dots").children].forEach((d,k) => d.classList.toggle("on", k === i));
   $("backBtn").classList.toggle("show", i > 0);
   const nb = $("nextBtn"); nb.classList.remove("show");
-  if (i < pages.length - 1) nextTimer = setTimeout(() => nb.classList.add("show"), C.nextDelay * 1000);
+  const onRsvp = p.id === "rsvp" && $("rsvpDone").style.display !== "block";
+  if (i < pages.length - 1 && !onRsvp) nextTimer = setTimeout(() => nb.classList.add("show"), C.nextDelay * 1000);
+  setArt(p);
 }
 $("nextBtn").onclick = () => { if ($("nextBtn").classList.contains("show")) go(cur + 1); };
 $("backBtn").onclick = () => go(cur - 1);
+
+/* ---------- Desktop art panel ---------- */
+const ART_FOR = { blessing: I.gate, invite: I.couple, date: I.gate, venue: I.venue, day: I.gate, countdown: I.couple, rsvp: I.gate, contact: I.couple, thanks: I.couple };
+let artFlip = false, artNow = "";
+function setArt(p){
+  const src = ART_FOR[p.id] || I.gate; if (!src || src === artNow) return;
+  artNow = src; artFlip = !artFlip;
+  const on = $(artFlip ? "artA" : "artB"), off = $(artFlip ? "artB" : "artA");
+  on.style.backgroundImage = `url("${src}")`; on.classList.add("on"); off.classList.remove("on");
+}
+if (I.gate){ $("artA").style.backgroundImage = `url("${I.gate}")`; $("artA").classList.add("on"); artNow = I.gate; artFlip = true; }
 
 /* ---------- Open ---------- */
 $("openBtn").onclick = () => {
@@ -626,10 +672,13 @@ document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
   cnt[k] = Math.max(0, cnt[k] + v); $(k).textContent = cnt[k]; $("rErr").textContent = ""; showTotal();
 });
 const form = $("rsvpForm");
-form.addEventListener("change", () => {
+form.addEventListener("change", e => {
+  if (e.target.name !== "att") return;
   $("rErr").textContent = "";
-  const no = form.att.value === "no"; $("countWrap").style.opacity = no ? .35 : 1;
-  $("countWrap").querySelectorAll("button").forEach(b => b.disabled = no);
+  const yes = form.att.value === "yes";
+  $("countWrap").hidden = !yes;
+  if (!yes){ cnt.veg = 0; cnt.nv = 0; $("veg").textContent = 0; $("nv").textContent = 0; showTotal(); }
+  else if (cnt.veg + cnt.nv === 0){ $("rErr").textContent = ""; }
 });
 form.addEventListener("submit", async ev => {
   ev.preventDefault();
@@ -661,7 +710,9 @@ function showDone(d){
     : "We'll miss you, and we're grateful for your blessings.")
     + (API ? "" : " (Preview: replies will reach us once the portal is connected.)");
   if (d.attending === "yes") petals(18);
+  if (typeof cur !== "undefined" && pages[cur] && pages[cur].id === "rsvp") $("nextBtn").classList.add("show");
 }
+$("rLater").onclick = e => { e.preventDefault(); go(cur + 1); };
 $("rEdit").onclick = () => { form.style.display = "block"; $("rsvpDone").style.display = "none"; $("rsvpBy").hidden = false; };
 if (PRIOR && (PRIOR.status === "Attending" || PRIOR.status === "Declined")){
   const v = parseInt(PRIOR.veg,10)||0, n = parseInt(PRIOR.nonveg,10)||0;
