@@ -85,6 +85,11 @@ nav.tabs button.on{color:var(--m);font-weight:600}
 .loc-r{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:#fff;padding:8px 6px;cursor:pointer}
 .loc-r b{display:block;font-weight:500;font-size:14px}.loc-r small{color:var(--mut);font-size:12px}
 button.stat{font:inherit;color:inherit}
+.cht{display:flex;gap:4px;margin-top:6px;align-items:center;flex-wrap:wrap}
+.cht button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:3px 9px;font-size:12px;cursor:pointer;color:var(--mut)}
+.cht button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.cht .custom{font-size:11px;color:var(--pe);margin-left:4px}
+#s_gc select{padding:6px 8px;font-size:13px}
 </style>
 </head>
 <body>
@@ -167,13 +172,25 @@ const groups = () => String(DATA.settings.groups || "").split("|").map(s=>s.trim
 const invited = (g, ev) => g.invitedTo === "Both" || g.invitedTo === (ev === "w" ? "Wedding" : "Reception");
 const num = v => parseInt(v, 10) || 0;
 const normPhone = p => { let d = String(p||"").replace(/\D/g,""); if (d.startsWith("0")) d = "94" + d.slice(1); if (d.length === 9) d = "94" + d; return d; };
+/* Invitation channel: guest's own choice, else the group default */
+const CH = { "No": "WhatsApp", "Physical only": "Physical", "WhatsApp and physical": "Both" };
+const CH_VAL = { WhatsApp: "No", Physical: "Physical only", Both: "WhatsApp and physical" };
+const DEFAULT_GC = { hasNumber: "WhatsApp", noNumber: "Needs number" };
+function groupChannels(){ try { return JSON.parse(DATA.settings.groupChannels || "{}"); } catch(e){ return {}; } }
+function groupDefault(g){
+  const c = Object.assign({}, DEFAULT_GC, groupChannels()[g.group] || {});
+  const v = g.phone ? c.hasNumber : c.noNumber;
+  return v === "Needs number" ? "No" : CH_VAL[v] || "No";
+}
+const isCustom = g => !!CH[g.physical];
+const eff = g => isCustom(g) ? g.physical : groupDefault(g);
 function status(g, ev){
   ev = ev || ui.event;
   if (!invited(g, ev)) return { k: "na", label: g.invitedTo === "Undecided" ? "Undecided" : "Not invited", cls: "b-ns" };
   const s = g[ev+"_status"];
   if (s === "Attending") return { k: "yes", label: "Coming", cls: "b-ok" };
   if (s === "Declined") return { k: "no", label: "Not coming", cls: "b-no" };
-  if (!g.phone && g.physical === "Physical only"){
+  if (!g.phone && eff(g) === "Physical only"){
     if (!g.physicalSentAt) return { k: "unsent", label: "Card to give", cls: "b-ns" };
     return { k: "pending", label: "No reply", cls: "b-pe" };
   }
@@ -197,7 +214,7 @@ function remText(g){
 const remUrl = g => "https://wa.me/" + normPhone(g.phone) + "?text=" + encodeURIComponent(remText(g));
 const waUrl = g => "https://wa.me/" + normPhone(g.phone) + "?text=" + encodeURIComponent(waText(g));
 function sideMatch(g, side){ return g.side === side || g.side === "Shared"; }
-const needsCard = g => g.physical === "Physical only" || g.physical === "WhatsApp and physical";
+const needsCard = g => eff(g) === "Physical only" || eff(g) === "WhatsApp and physical";
 const notInvitedAtAll = g => g.invitedTo === "Undecided";
 const SIDES = ["Pirakash","Shageepana","Shared"];
 const fmtPhone = p => { const d = normPhone(p); return d ? "+" + d : ""; };
@@ -252,7 +269,7 @@ function renderOverview(){
     </div>
     <div class="grid" style="margin-top:10px">
       <button class="stat" id="physCard" type="button" style="text-align:left;cursor:pointer"><span>Physical invitations ›</span><b>${DATA.guests.filter(g=>needsCard(g)&&!notInvitedAtAll(g)&&!g.physicalSentAt).length}</b><small>to give · ${DATA.guests.filter(g=>needsCard(g)&&!notInvitedAtAll(g)&&g.physicalSentAt).length} given</small></button>
-      <button class="stat" id="noPhCard" type="button" style="text-align:left;cursor:pointer"><span>No phone number ›</span><b>${DATA.guests.filter(g=>!g.phone&&!notInvitedAtAll(g)).length}</b><small>${DATA.guests.filter(g=>!g.phone&&!notInvitedAtAll(g)&&g.physical==="Physical only").length} set to physical only</small></button>
+      <button class="stat" id="noPhCard" type="button" style="text-align:left;cursor:pointer"><span>No phone number ›</span><b>${DATA.guests.filter(g=>!g.phone&&!notInvitedAtAll(g)).length}</b><small>${DATA.guests.filter(g=>!g.phone&&!notInvitedAtAll(g)&&eff(g)==="Physical only").length} physical only</small></button>
     </div>
     <h2>Meals</h2>
     <div class="grid"><div class="stat"><span>Vegetarian</span><b>${t.veg}</b></div><div class="stat"><span>Non-vegetarian</span><b>${t.nv}</b></div></div>
@@ -308,13 +325,27 @@ function rowHtml(g){
   const meals = (s.k === "yes" ? `${num(g[ev+"_veg"])} veg · ${num(g[ev+"_nonveg"])} non-veg` : `${esc(g.group)} · up to ${num(g.max)||1}${g.side==="Shared"?" · Shared":""}`)
     + (needsCard(g) ? (g.physicalSentAt ? " · card given" : " · card") : "");
   const canSend = g.phone && invited(g, ev) && (s.k === "unsent" || s.k === "pending");
-  return `<div class="row" data-code="${esc(g.code)}"><div class="n"><b>${esc(g.name)}</b><small>${meals}</small></div>
+  return `<div class="row" data-code="${esc(g.code)}"><div class="n"><b>${esc(g.name)}</b><small>${meals}</small>${chToggle(g)}</div>
     ${canSend ? (s.k === "pending"
       ? `<button class="btn wa sm" data-remind="${esc(g.code)}" type="button">Remind</button>`
       : `<a class="btn wa sm" data-wa="${esc(g.code)}" href="${esc(waUrl(g))}" target="_blank" rel="noopener">Send</a>`) : ""}
     <span class="badge ${s.cls}">${s.label}</span></div>`;
 }
+function chToggle(g){
+  const cur = CH[eff(g)];
+  return `<div class="cht">${["WhatsApp","Physical","Both"].map(c => `<button type="button" data-ch="${c}" data-cc="${esc(g.code)}" class="${cur===c?"on":""}">${c}</button>`).join("")}${isCustom(g) ? `<span class="custom">custom</span>` : ""}</div>`;
+}
+function bindCh(root, after){
+  root.querySelectorAll("[data-ch]").forEach(b => b.onclick = async e => {
+    e.stopPropagation();
+    const g = DATA.guests.find(x => x.code === b.dataset.cc), val = CH_VAL[b.dataset.ch];
+    if (eff(g) === val && isCustom(g)) return;
+    g.physical = val; (after || render)();
+    try { const j = await call("save", { guest: { code: g.code, physical: val } }); Object.assign(g, j.guest); } catch(err){ toast(err.message); }
+  });
+}
 function bindRows(root){
+  bindCh(root);
   root.querySelectorAll("[data-wa]").forEach(a => a.onclick = e => { e.stopPropagation(); markSent(a.dataset.wa); });
   root.querySelectorAll("[data-remind]").forEach(b => b.onclick = e => { e.stopPropagation(); remindMenu(DATA.guests.find(g => g.code === b.dataset.remind)); });
   root.querySelectorAll(".row").forEach(r => r.onclick = () => openEditor(DATA.guests.find(g => g.code === r.dataset.code)));
@@ -361,7 +392,7 @@ function renderPhysical(){
       const given = !!g.physicalSentAt, d = dirUrl(g);
       h += `<div class="row" data-code="${esc(g.code)}" style="${given ? "background:var(--okb)" : ""}">
         <div class="n"><b style="${given ? "color:var(--ok)" : ""}">${given ? "✓ " : ""}${esc(g.name)}</b>
-          <small>${esc(g.group)}${g.physical === "Physical only" ? " · card only" : " · WhatsApp + card"}${g.address ? " · " + esc(g.address) : ""}</small></div>
+          <small>${esc(g.group)}${eff(g) === "Physical only" ? " · card only" : " · WhatsApp + card"}${g.address ? " · " + esc(g.address) : ""}</small>${chToggle(g)}</div>
         ${d ? `<a class="btn sm" href="${esc(d)}" target="_blank" rel="noopener" data-stop="1">Directions</a>` : ""}
         <button class="btn sm ${given ? "" : "p"}" data-give="${esc(g.code)}" type="button">${given ? "Undo" : "Mark as given"}</button></div>`;
     });
@@ -371,6 +402,7 @@ function renderPhysical(){
   $("main").innerHTML = h;
   $("backOv").onclick = () => { ui.tab = "overview"; render(); };
   document.querySelectorAll("[data-stop]").forEach(a => a.onclick = e => e.stopPropagation());
+  bindCh($("main"), renderPhysical);
   document.querySelectorAll("[data-give]").forEach(b => b.onclick = async e => {
     e.stopPropagation();
     const g = DATA.guests.find(x => x.code === b.dataset.give); const val = g.physicalSentAt ? "" : new Date().toISOString();
@@ -381,22 +413,18 @@ function renderPhysical(){
 }
 function renderNoPhone(){
   const all = DATA.guests.filter(g => !g.phone && !notInvitedAtAll(g));
-  let h = backBar("No phone number") + `<p class="sub">Add a number, or set the guest to "Physical only" if you'll hand them a card.</p>`;
+  let h = backBar("No phone number") + `<p class="sub">Add a number, or tap Physical if you'll hand them a card.</p>`;
   SIDES.forEach(side => {
     const list = all.filter(g => g.side === side).sort((a,b) => String(a.group+a.name).localeCompare(String(b.group+b.name)));
     if (!list.length) return;
     h += `<h3>${esc(side)} <span class="sub">· ${list.length}</span></h3><div class="list">` + list.map(g => `<div class="row" data-code="${esc(g.code)}">
-      <div class="n"><b>${esc(g.name)}</b><small>${esc(g.group)} · ${esc(g.invitedTo)}</small></div>
-      ${g.physical === "Physical only" ? `<span class="badge b-ok">Physical only</span>` : `<button class="btn sm" data-phys="${esc(g.code)}" type="button">Set physical only</button>`}</div>`).join("") + `</div>`;
+      <div class="n"><b>${esc(g.name)}</b><small>${esc(g.group)} · ${esc(g.invitedTo)}</small>${chToggle(g)}</div>
+      </div>`).join("") + `</div>`;
   });
   if (!all.length) h += `<div class="empty">Everyone invited has a number. 🎉</div>`;
   $("main").innerHTML = h;
   $("backOv").onclick = () => { ui.tab = "overview"; render(); };
-  document.querySelectorAll("[data-phys]").forEach(b => b.onclick = async e => {
-    e.stopPropagation();
-    const g = DATA.guests.find(x => x.code === b.dataset.phys); g.physical = "Physical only"; renderNoPhone();
-    try { const j = await call("save", { guest: { code: g.code, physical: "Physical only" } }); Object.assign(g, j.guest); toast("Set to physical only"); } catch(err){ toast(err.message); }
-  });
+  bindCh($("main"), renderNoPhone);
   document.querySelectorAll("#main .row").forEach(r => r.onclick = () => openEditor(DATA.guests.find(g => g.code === r.dataset.code)));
 }
 
@@ -533,7 +561,7 @@ function openEditor(g0){
       <div><label class="f">Up to people</label><input type="number" min="1" id="e_max" value="${num(g.max)||1}"></div>
     </div>
     <label class="f">WhatsApp number</label><input type="tel" id="e_phone" value="${esc(g.phone)}" placeholder="077 123 4567">
-    <label class="f">Physical invitation</label><select id="e_phys">${opt(["No","Physical only","WhatsApp and physical"], g.physical || "No")}</select>
+    <label class="f">How to invite</label><select id="e_phys"><option value="" ${isCustom(g)?"":"selected"}>Group default (${CH[groupDefault(g)]})</option>${["No","Physical only","WhatsApp and physical"].map(v => `<option value="${v}" ${g.physical===v?"selected":""}>${CH[v]}${v==="No"?" only":v==="Physical only"?" only":" (WhatsApp + card)"}</option>`).join("")}</select>
     ${g.physicalSentAt ? `<p class="sub" style="margin-top:4px">Card given on ${new Date(g.physicalSentAt).toLocaleDateString()}</p>` : ""}
     <label class="f">Notes</label><input type="text" id="e_notes" value="${esc(g.notes)}" placeholder="Optional">
     <div class="card" style="margin-top:12px">
@@ -637,6 +665,11 @@ function renderSettings(){
     <h2>Settings</h2>
     <div class="card">
       <label class="f">Default reply-by date</label><input type="date" id="s_by" value="${esc(s.rsvpBy)}">
+      <label class="f">How to invite, per group</label>
+      <table class="tbl" id="s_gc"><tr><th>Group</th><th>Has a number</th><th>No number</th></tr>${groups().map(gr => { const c = Object.assign({}, DEFAULT_GC, groupChannels()[gr] || {}); return `<tr><td>${esc(gr)}</td>
+        <td><select data-gch="${esc(gr)}">${["WhatsApp","Physical","Both"].map(v => `<option ${c.hasNumber===v?"selected":""}>${v}</option>`).join("")}</select></td>
+        <td><select data-gcn="${esc(gr)}">${["Needs number","Physical"].map(v => `<option ${c.noNumber===v?"selected":""}>${v}</option>`).join("")}</select></td></tr>`; }).join("")}</table>
+      <p class="sub">Guests follow their group unless you change them one by one (marked "custom").</p>
       <label class="f">Reply-by date per group · leave empty to use the default</label>
       <div id="s_gd">${groups().map(gr => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="flex:1;font-size:14px">${esc(gr)}</span><input type="date" data-gd="${esc(gr)}" value="${esc(groupDates()[gr] || "")}" style="width:170px"></div>`).join("")}</div>
       <p class="sub">After a guest's date, their link still shows the invitation, but replying closes and they're asked to contact you. You can still enter their reply here.</p>
@@ -668,7 +701,7 @@ function renderSettings(){
     const byText = by ? new Date(by + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
     const gr = $("s_groups").value.split("\n").map(x=>x.trim()).filter(Boolean).join("|");
     $("sSave").disabled = true;
-    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), googleMapsKey: $("s_gkey").value.trim(), waReminder: $("s_rem").value, groups: gr, groupDeadlines: JSON.stringify(Object.fromEntries([...document.querySelectorAll("[data-gd]")].filter(i => i.value).map(i => [i.dataset.gd, i.value]))), defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
+    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groupChannels: JSON.stringify(Object.fromEntries(groups().map(gr => [gr, { hasNumber: document.querySelector(`[data-gch="${CSS.escape(gr)}"]`).value, noNumber: document.querySelector(`[data-gcn="${CSS.escape(gr)}"]`).value }]))), googleMapsKey: $("s_gkey").value.trim(), waReminder: $("s_rem").value, groups: gr, groupDeadlines: JSON.stringify(Object.fromEntries([...document.querySelectorAll("[data-gd]")].filter(i => i.value).map(i => [i.dataset.gd, i.value]))), defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
     catch(e){ $("sErr").textContent = e.message; }
     $("sSave").disabled = false;
   };
