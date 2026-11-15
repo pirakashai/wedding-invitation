@@ -190,6 +190,11 @@ function waText(g){
   return String(DATA.settings.waTemplate || "Dear {name}, {link}")
     .replaceAll("{name}", g.name).replaceAll("{link}", link(g)).replaceAll("{rsvpBy}", fmtDate(deadlineOf(g)) || DATA.settings.rsvpByText || "");
 }
+function remText(g){
+  const t = DATA.settings.waReminder || "Hi {name} 🌸 Just a gentle reminder to reply to our wedding invitation by {rsvpBy}. Your personal invitation: {link}\nWith love, Pirakash & Shageepana";
+  return t.replaceAll("{name}", g.name).replaceAll("{link}", link(g)).replaceAll("{rsvpBy}", fmtDate(deadlineOf(g)) || DATA.settings.rsvpByText || "");
+}
+const remUrl = g => "https://wa.me/" + normPhone(g.phone) + "?text=" + encodeURIComponent(remText(g));
 const waUrl = g => "https://wa.me/" + normPhone(g.phone) + "?text=" + encodeURIComponent(waText(g));
 function sideMatch(g, side){ return g.side === side || g.side === "Shared"; }
 const needsCard = g => g.physical === "Physical only" || g.physical === "WhatsApp and physical";
@@ -304,12 +309,34 @@ function rowHtml(g){
     + (needsCard(g) ? (g.physicalSentAt ? " · card given" : " · card") : "");
   const canSend = g.phone && invited(g, ev) && (s.k === "unsent" || s.k === "pending");
   return `<div class="row" data-code="${esc(g.code)}"><div class="n"><b>${esc(g.name)}</b><small>${meals}</small></div>
-    ${canSend ? `<a class="btn wa sm" data-wa="${esc(g.code)}" href="${esc(waUrl(g))}" target="_blank" rel="noopener">${s.k==="pending"?"Remind":"Send"}</a>` : ""}
+    ${canSend ? (s.k === "pending"
+      ? `<button class="btn wa sm" data-remind="${esc(g.code)}" type="button">Remind</button>`
+      : `<a class="btn wa sm" data-wa="${esc(g.code)}" href="${esc(waUrl(g))}" target="_blank" rel="noopener">Send</a>`) : ""}
     <span class="badge ${s.cls}">${s.label}</span></div>`;
 }
 function bindRows(root){
   root.querySelectorAll("[data-wa]").forEach(a => a.onclick = e => { e.stopPropagation(); markSent(a.dataset.wa); });
+  root.querySelectorAll("[data-remind]").forEach(b => b.onclick = e => { e.stopPropagation(); remindMenu(DATA.guests.find(g => g.code === b.dataset.remind)); });
   root.querySelectorAll(".row").forEach(r => r.onclick = () => openEditor(DATA.guests.find(g => g.code === r.dataset.code)));
+}
+function remindMenu(g){
+  $("sheet").innerHTML = `<div class="top"><b>${esc(g.name)}</b><button class="btn sm" id="rmX" type="button">Cancel</button></div>
+    <p class="sub">Sent ${g.sentAt ? new Date(g.sentAt).toLocaleDateString() : ""} to ${esc(fmtPhone(g.phone))}. No reply yet.</p>
+    <div style="display:grid;gap:10px;margin-top:14px">
+      <a class="btn wa" id="rmSend" href="${esc(remUrl(g))}" target="_blank" rel="noopener" style="justify-content:center">Send reminder on WhatsApp</a>
+      <button class="btn" id="rmUnsend" type="button" style="justify-content:center">Mark as not sent</button>
+      <p class="sub">Use "Mark as not sent" if the invitation went to a wrong number. The Send button comes back.</p>
+    </div>`;
+  $("panel").hidden = false; document.body.style.overflow = "hidden";
+  const close = () => { $("panel").hidden = true; document.body.style.overflow = ""; };
+  $("rmX").onclick = close; $("panel").onclick = e => { if (e.target === $("panel")) close(); };
+  $("rmSend").onclick = () => setTimeout(close, 300);
+  $("rmUnsend").onclick = () => { close(); markUnsent(g.code); };
+}
+async function markUnsent(code){
+  const g = DATA.guests.find(x => x.code === code); if (!g) return;
+  g.sentAt = ""; render();
+  try { const j = await call("save", { guest: { code, sentAt: "" } }); Object.assign(g, j.guest); toast("Marked as not sent"); } catch(e){ toast(e.message); }
 }
 async function markSent(code){
   const g = DATA.guests.find(x => x.code === code); if (!g || g.sentAt) return;
@@ -531,11 +558,13 @@ function openEditor(g0){
       ${g.phone ? `<a class="btn wa" id="waBtn" href="${esc(waUrl(g))}" target="_blank" rel="noopener">WhatsApp</a>` : ""}
       <button class="btn danger" id="delBtn" type="button">Delete</button>`}
     </div>
-    ${isNew ? "" : `<p class="sub" style="margin-top:12px">Link: ${esc(link(g))}${g.sentAt ? " · sent " + new Date(g.sentAt).toLocaleDateString() : ""}</p>`}`;
+    ${isNew ? "" : `<p class="sub" style="margin-top:12px">Link: ${esc(link(g))}${g.sentAt ? " · sent " + new Date(g.sentAt).toLocaleDateString() : ""}</p>`}
+    ${g.sentAt ? `<button class="btn sm" id="unsendBtn" type="button" style="margin-top:6px">Mark as not sent</button>` : ""}`;
   $("panel").hidden = false; document.body.style.overflow = "hidden";
   const close = () => { $("panel").hidden = true; document.body.style.overflow = ""; };
   $("xBtn").onclick = close; $("panel").onclick = e => { if (e.target === $("panel")) close(); };
   const getLoc = setupLocation(g);
+  if ($("unsendBtn")) $("unsendBtn").onclick = () => { close(); markUnsent(g.code); };
   $("e_inv").onchange = () => { const v = $("e_inv").value, t = {invitedTo:v}; $("rep_w").hidden = !invited(t,"w"); $("rep_r").hidden = !invited(t,"r"); };
   if (!isNew){
     $("copyBtn").onclick = async () => { try { await navigator.clipboard.writeText(link(g)); toast("Link copied"); } catch(e){ toast(link(g)); } };
@@ -624,6 +653,7 @@ function renderSettings(){
       <audio id="s_audio" preload="none"></audio>
       <label class="f">Groups (one per line)</label><textarea id="s_groups">${esc(groups().join("\n"))}</textarea>
       <label class="f">WhatsApp message · {name}, {link} and {rsvpBy} fill in automatically</label><textarea id="s_wa" style="min-height:260px">${esc(s.waTemplate)}</textarea>
+      <label class="f">Reminder message · same {name}, {link} and {rsvpBy}</label><textarea id="s_rem" style="min-height:110px">${esc(s.waReminder || "Hi {name} 🌸 Just a gentle reminder to reply to our wedding invitation by {rsvpBy}. Your personal invitation: {link}\nWith love, Pirakash & Shageepana")}</textarea>
       <div class="err" id="sErr"></div>
       <div class="actions"><button class="btn p" id="sSave" type="button">Save settings</button></div>
     </div>
@@ -638,7 +668,7 @@ function renderSettings(){
     const byText = by ? new Date(by + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
     const gr = $("s_groups").value.split("\n").map(x=>x.trim()).filter(Boolean).join("|");
     $("sSave").disabled = true;
-    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), googleMapsKey: $("s_gkey").value.trim(), groups: gr, groupDeadlines: JSON.stringify(Object.fromEntries([...document.querySelectorAll("[data-gd]")].filter(i => i.value).map(i => [i.dataset.gd, i.value]))), defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
+    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), googleMapsKey: $("s_gkey").value.trim(), waReminder: $("s_rem").value, groups: gr, groupDeadlines: JSON.stringify(Object.fromEntries([...document.querySelectorAll("[data-gd]")].filter(i => i.value).map(i => [i.dataset.gd, i.value]))), defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
     catch(e){ $("sErr").textContent = e.message; }
     $("sSave").disabled = false;
   };

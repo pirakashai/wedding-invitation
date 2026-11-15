@@ -131,6 +131,9 @@ function saveGuest_(g) {
     const base = row > 0 ? rowToObj_(row) : {};
     const o = Object.assign({}, base, g);
     if (!o.name) throw new Error('Name is required');
+    // A changed phone number makes the invitation sendable again
+    const digits = v => String(v || '').replace(/\D/g, '').replace(/^0/, '94');
+    if (row > 0 && 'phone' in g && digits(g.phone) !== digits(base.phone)) o.sentAt = '';
     if (!o.code) o.code = newCode_();
     ['w', 'r'].forEach(ev => {
       const invited = o.invitedTo === 'Both' || o.invitedTo === (ev === 'w' ? 'Wedding' : 'Reception');
