@@ -82,6 +82,9 @@ nav.tabs button.on{color:var(--m);font-weight:600}
 .toolbar{display:flex;gap:8px;align-items:center;margin:12px 0 8px}
 .toolbar input{flex:1}
 .loading{opacity:.6;pointer-events:none}
+.loc-r{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:#fff;padding:8px 6px;cursor:pointer}
+.loc-r b{display:block;font-weight:500;font-size:14px}.loc-r small{color:var(--mut);font-size:12px}
+button.stat{font:inherit;color:inherit}
 </style>
 </head>
 <body>
@@ -170,6 +173,10 @@ function status(g, ev){
   const s = g[ev+"_status"];
   if (s === "Attending") return { k: "yes", label: "Coming", cls: "b-ok" };
   if (s === "Declined") return { k: "no", label: "Not coming", cls: "b-no" };
+  if (!g.phone && g.physical === "Physical only"){
+    if (!g.physicalSentAt) return { k: "unsent", label: "Card to give", cls: "b-ns" };
+    return { k: "pending", label: "No reply", cls: "b-pe" };
+  }
   if (!g.phone) return { k: "nonum", label: "Needs number", cls: "b-ns" };
   if (!g.sentAt) return { k: "unsent", label: "Not sent", cls: "b-ns" };
   return { k: "pending", label: "No reply", cls: "b-pe" };
@@ -185,6 +192,11 @@ function waText(g){
 }
 const waUrl = g => "https://wa.me/" + normPhone(g.phone) + "?text=" + encodeURIComponent(waText(g));
 function sideMatch(g, side){ return g.side === side || g.side === "Shared"; }
+const needsCard = g => g.physical === "Physical only" || g.physical === "WhatsApp and physical";
+const notInvitedAtAll = g => g.invitedTo === "Undecided";
+const SIDES = ["Pirakash","Shageepana","Shared"];
+const fmtPhone = p => { const d = normPhone(p); return d ? "+" + d : ""; };
+const dirUrl = g => g.lat && g.lng ? `https://www.google.com/maps/dir/?api=1&destination=${g.lat},${g.lng}` : (g.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(g.address)}` : "");
 
 /* ---------- Tabs ---------- */
 document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
@@ -195,6 +207,8 @@ document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => {
 function render(){
   if (ui.tab === "overview") renderOverview();
   else if (ui.tab === "settings") renderSettings();
+  else if (ui.tab === "physical") renderPhysical();
+  else if (ui.tab === "nophone") renderNoPhone();
   else renderSide(ui.tab);
 }
 function evSeg(){
@@ -231,6 +245,10 @@ function renderOverview(){
       <div class="stat"><span>Not coming</span><b style="color:var(--no)">${t.no}</b><small>invitations</small></div>
       <div class="stat"><span>Waiting for reply</span><b style="color:var(--pe)">${t.pend}</b><small>${t.unsent} not sent · ${t.nonum} need number</small></div>
     </div>
+    <div class="grid" style="margin-top:10px">
+      <button class="stat" id="physCard" type="button" style="text-align:left;cursor:pointer"><span>Physical invitations ›</span><b>${DATA.guests.filter(g=>needsCard(g)&&!notInvitedAtAll(g)&&!g.physicalSentAt).length}</b><small>to give · ${DATA.guests.filter(g=>needsCard(g)&&!notInvitedAtAll(g)&&g.physicalSentAt).length} given</small></button>
+      <button class="stat" id="noPhCard" type="button" style="text-align:left;cursor:pointer"><span>No phone number ›</span><b>${DATA.guests.filter(g=>!g.phone&&!notInvitedAtAll(g)).length}</b><small>${DATA.guests.filter(g=>!g.phone&&!notInvitedAtAll(g)&&g.physical==="Physical only").length} set to physical only</small></button>
+    </div>
     <h2>Meals</h2>
     <div class="grid"><div class="stat"><span>Vegetarian</span><b>${t.veg}</b></div><div class="stat"><span>Non-vegetarian</span><b>${t.nv}</b></div></div>
     <p class="sub" style="margin-top:8px">From replies so far. ${t.pend} invitations haven't replied yet.</p>
@@ -242,6 +260,8 @@ function renderOverview(){
     <p class="sub" style="margin-bottom:8px">Invitations sent but not answered. Tap WhatsApp to send a gentle reminder.</p>
     <div class="list" id="pendList"></div>`;
   bindSeg();
+  $("physCard").onclick = () => { ui.tab = "physical"; render(); scrollTo(0,0); };
+  $("noPhCard").onclick = () => { ui.tab = "nophone"; render(); scrollTo(0,0); };
   const pend = DATA.guests.filter(g => status(g, ev).k === "pending");
   $("pendList").innerHTML = pend.length ? pend.map(rowHtml).join("") : `<div class="empty">No one is waiting. 🎉</div>`;
   bindRows($("pendList"));
@@ -252,7 +272,7 @@ function renderSide(side){
   const base = DATA.guests.filter(g => sideMatch(g, side));
   const gl = ["All"].concat(groups());
   const counts = {}; base.forEach(g => counts[g.group] = (counts[g.group]||0) + 1);
-  const filters = [["All","All"],["unsent","Not sent"],["pending","No reply"],["yes","Coming"],["no","Not coming"],["nonum","Needs number"],["na","Not invited"]];
+  const filters = [["All","All"],["unsent","Not sent"],["pending","No reply"],["yes","Coming"],["no","Not coming"],["nophone","No phone number"],["physical","Physical invitations"],["na","Not invited"]];
   $("main").innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">${evSeg()}
       <button class="btn p sm" id="addBtn" type="button">+ Add guest</button></div>
@@ -271,7 +291,7 @@ function renderSide(side){
 function drawList(base){
   const q = ui.q.trim().toLowerCase(), qd = q.replace(/\D/g,"");
   const list = base.filter(g => (ui.group === "All" || g.group === ui.group)
-    && (ui.filter === "All" || status(g).k === ui.filter)
+    && (ui.filter === "All" || (ui.filter === "nophone" ? !g.phone : ui.filter === "physical" ? needsCard(g) : status(g).k === ui.filter))
     && (!q || String(g.name).toLowerCase().includes(q) || (qd.length > 3 && normPhone(g.phone).includes(qd))))
     .sort((a,b) => String(a.name).localeCompare(String(b.name)));
   $("cnt").textContent = `${list.length} guest${list.length===1?"":"s"}`;
@@ -280,7 +300,8 @@ function drawList(base){
 }
 function rowHtml(g){
   const s = status(g), ev = ui.event;
-  const meals = s.k === "yes" ? `${num(g[ev+"_veg"])} veg · ${num(g[ev+"_nonveg"])} non-veg` : `${esc(g.group)} · up to ${num(g.max)||1}${g.side==="Shared"?" · Shared":""}`;
+  const meals = (s.k === "yes" ? `${num(g[ev+"_veg"])} veg · ${num(g[ev+"_nonveg"])} non-veg` : `${esc(g.group)} · up to ${num(g.max)||1}${g.side==="Shared"?" · Shared":""}`)
+    + (needsCard(g) ? (g.physicalSentAt ? " · card given" : " · card") : "");
   const canSend = g.phone && invited(g, ev) && (s.k === "unsent" || s.k === "pending");
   return `<div class="row" data-code="${esc(g.code)}"><div class="n"><b>${esc(g.name)}</b><small>${meals}</small></div>
     ${canSend ? `<a class="btn wa sm" data-wa="${esc(g.code)}" href="${esc(waUrl(g))}" target="_blank" rel="noopener">${s.k==="pending"?"Remind":"Send"}</a>` : ""}
@@ -294,6 +315,171 @@ async function markSent(code){
   const g = DATA.guests.find(x => x.code === code); if (!g || g.sentAt) return;
   g.sentAt = new Date().toISOString(); setTimeout(render, 400);
   try { const j = await call("markSent", { code }); Object.assign(g, j.guest); } catch(e){ toast(e.message); }
+}
+
+/* ---------- Physical invitations (grouped by side) ---------- */
+function backBar(title){
+  return `<div style="display:flex;align-items:center;gap:10px;margin:14px 0 4px"><button class="btn sm" id="backOv" type="button">‹ Overview</button><h2 style="margin:0">${title}</h2></div>`;
+}
+function renderPhysical(){
+  const all = DATA.guests.filter(g => needsCard(g) && !notInvitedAtAll(g));
+  let h = backBar("Physical invitations") + `<p class="sub">Everyone who gets a card in person, including guests who also got WhatsApp. Tap "Mark as given" when you hand it over.</p>`;
+  SIDES.forEach(side => {
+    const list = all.filter(g => g.side === side);
+    if (!list.length) return;
+    const todo = list.filter(g => !g.physicalSentAt).sort((a,b) => String(a.group+a.name).localeCompare(String(b.group+b.name)));
+    const done = list.filter(g => g.physicalSentAt).sort((a,b) => String(a.name).localeCompare(String(b.name)));
+    h += `<h3>${esc(side)} <span class="sub">· ${todo.length} to give · ${done.length} given</span></h3><div class="list">`;
+    todo.concat(done).forEach(g => {
+      const given = !!g.physicalSentAt, d = dirUrl(g);
+      h += `<div class="row" data-code="${esc(g.code)}" style="${given ? "background:var(--okb)" : ""}">
+        <div class="n"><b style="${given ? "color:var(--ok)" : ""}">${given ? "✓ " : ""}${esc(g.name)}</b>
+          <small>${esc(g.group)}${g.physical === "Physical only" ? " · card only" : " · WhatsApp + card"}${g.address ? " · " + esc(g.address) : ""}</small></div>
+        ${d ? `<a class="btn sm" href="${esc(d)}" target="_blank" rel="noopener" data-stop="1">Directions</a>` : ""}
+        <button class="btn sm ${given ? "" : "p"}" data-give="${esc(g.code)}" type="button">${given ? "Undo" : "Mark as given"}</button></div>`;
+    });
+    h += `</div>`;
+  });
+  if (!all.length) h += `<div class="empty">No physical invitations yet. Set "Physical invitation" in a guest's edit screen.</div>`;
+  $("main").innerHTML = h;
+  $("backOv").onclick = () => { ui.tab = "overview"; render(); };
+  document.querySelectorAll("[data-stop]").forEach(a => a.onclick = e => e.stopPropagation());
+  document.querySelectorAll("[data-give]").forEach(b => b.onclick = async e => {
+    e.stopPropagation();
+    const g = DATA.guests.find(x => x.code === b.dataset.give); const val = g.physicalSentAt ? "" : new Date().toISOString();
+    g.physicalSentAt = val; renderPhysical();
+    try { const j = await call("save", { guest: { code: g.code, physicalSentAt: val } }); Object.assign(g, j.guest); } catch(err){ toast(err.message); }
+  });
+  document.querySelectorAll("#main .row").forEach(r => r.onclick = () => openEditor(DATA.guests.find(g => g.code === r.dataset.code)));
+}
+function renderNoPhone(){
+  const all = DATA.guests.filter(g => !g.phone && !notInvitedAtAll(g));
+  let h = backBar("No phone number") + `<p class="sub">Add a number, or set the guest to "Physical only" if you'll hand them a card.</p>`;
+  SIDES.forEach(side => {
+    const list = all.filter(g => g.side === side).sort((a,b) => String(a.group+a.name).localeCompare(String(b.group+b.name)));
+    if (!list.length) return;
+    h += `<h3>${esc(side)} <span class="sub">· ${list.length}</span></h3><div class="list">` + list.map(g => `<div class="row" data-code="${esc(g.code)}">
+      <div class="n"><b>${esc(g.name)}</b><small>${esc(g.group)} · ${esc(g.invitedTo)}</small></div>
+      ${g.physical === "Physical only" ? `<span class="badge b-ok">Physical only</span>` : `<button class="btn sm" data-phys="${esc(g.code)}" type="button">Set physical only</button>`}</div>`).join("") + `</div>`;
+  });
+  if (!all.length) h += `<div class="empty">Everyone invited has a number. 🎉</div>`;
+  $("main").innerHTML = h;
+  $("backOv").onclick = () => { ui.tab = "overview"; render(); };
+  document.querySelectorAll("[data-phys]").forEach(b => b.onclick = async e => {
+    e.stopPropagation();
+    const g = DATA.guests.find(x => x.code === b.dataset.phys); g.physical = "Physical only"; renderNoPhone();
+    try { const j = await call("save", { guest: { code: g.code, physical: "Physical only" } }); Object.assign(g, j.guest); toast("Set to physical only"); } catch(err){ toast(err.message); }
+  });
+  document.querySelectorAll("#main .row").forEach(r => r.onclick = () => openEditor(DATA.guests.find(g => g.code === r.dataset.code)));
+}
+
+/* ---------- Location picker: Google (when a key is set) + OpenStreetMap ---------- */
+let leafletReady = null, googleReady = null;
+function loadLeaflet(){
+  if (leafletReady) return leafletReady;
+  leafletReady = new Promise((res, rej) => {
+    const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"; document.head.appendChild(l);
+    const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc);
+  });
+  return leafletReady;
+}
+function loadGoogle(){
+  const key = DATA.settings.googleMapsKey;
+  if (!key) return Promise.resolve(false);
+  if (googleReady) return googleReady;
+  googleReady = new Promise(res => {
+    window.__gmReady = () => res(true);
+    const sc = document.createElement("script");
+    sc.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async&callback=__gmReady`;
+    sc.onerror = () => res(false); document.head.appendChild(sc);
+    setTimeout(() => res(!!(window.google && google.maps)), 10000);
+  });
+  return googleReady;
+}
+function setupLocation(g){
+  const st = { lat: g.lat ? +g.lat : null, lng: g.lng ? +g.lng : null, address: g.address || "", src: g.locSource || "" };
+  let map = null, marker = null, gmap = false, token = null, t1 = null;
+  const center = st.lat ? [st.lat, st.lng] : [9.6615, 80.0255]; // Jaffna
+  const updDir = () => { const d = dirUrl({ lat: st.lat, lng: st.lng, address: st.address }); $("l_dir").hidden = !d; if (d) $("l_dir").href = d; $("l_addr").textContent = st.address || (st.lat ? `${st.lat.toFixed(5)}, ${st.lng.toFixed(5)}` : "No location yet"); };
+  async function reverse(){
+    if (st.address || !st.lat) return;
+    try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${st.lat}&lon=${st.lng}`); const j = await r.json(); if (j.display_name){ st.address = j.display_name; updDir(); } } catch(e){}
+  }
+  function setPin(lat, lng, address, src){
+    st.lat = +lat; st.lng = +lng; if (address !== undefined) st.address = address; if (src) st.src = src;
+    if (map){
+      if (gmap){ marker.setPosition({ lat: st.lat, lng: st.lng }); marker.setMap(map); map.setCenter({ lat: st.lat, lng: st.lng }); map.setZoom(17); }
+      else { marker.setLatLng([st.lat, st.lng]).addTo(map); map.setView([st.lat, st.lng], 17); }
+    }
+    updDir(); reverse();
+  }
+  async function initMap(){
+    const useG = await loadGoogle();
+    if (useG && google.maps && google.maps.Map){
+      gmap = true;
+      map = new google.maps.Map($("l_map"), { center: { lat: center[0], lng: center[1] }, zoom: st.lat ? 17 : 12, streetViewControl: false, mapTypeControl: false });
+      marker = new google.maps.Marker({ position: { lat: center[0], lng: center[1] }, draggable: true, map: st.lat ? map : null });
+      marker.addListener("dragend", e => { st.address = ""; setPin(e.latLng.lat(), e.latLng.lng(), "", "pin"); });
+      map.addListener("click", e => { st.address = ""; setPin(e.latLng.lat(), e.latLng.lng(), "", "pin"); });
+      $("l_gline").hidden = false;
+    } else {
+      await loadLeaflet();
+      map = L.map($("l_map")).setView(center, st.lat ? 17 : 12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
+      marker = L.marker(center, { draggable: true });
+      if (st.lat) marker.addTo(map);
+      marker.on("dragend", () => { const p = marker.getLatLng(); st.address = ""; setPin(p.lat, p.lng, "", "pin"); });
+      map.on("click", e => { st.address = ""; setPin(e.latlng.lat, e.latlng.lng, "", "pin"); });
+    }
+  }
+  function resultBtn(label, sub, onPick){
+    const b = document.createElement("button"); b.type = "button"; b.className = "loc-r";
+    b.innerHTML = `<b>${esc(label)}</b><small>${esc(sub || "")}</small>`; b.onclick = onPick; return b;
+  }
+  async function search(q){
+    const gBox = $("l_gres"), oBox = $("l_ores");
+    gBox.innerHTML = ""; oBox.innerHTML = "";
+    if (q.length < 3) return;
+    // Line 1: Google
+    if (gmap){
+      try {
+        const { AutocompleteSuggestion, AutocompleteSessionToken } = await google.maps.importLibrary("places");
+        token = token || new AutocompleteSessionToken();
+        const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: token, includedRegionCodes: ["lk"] });
+        (suggestions || []).slice(0, 5).forEach(sg => {
+          const pp = sg.placePrediction; if (!pp) return;
+          gBox.appendChild(resultBtn(pp.mainText ? pp.mainText.text : pp.text.text, pp.secondaryText ? pp.secondaryText.text : "", async () => {
+            const place = pp.toPlace(); await place.fetchFields({ fields: ["displayName", "formattedAddress", "location"] });
+            token = null; gBox.innerHTML = ""; oBox.innerHTML = "";
+            setPin(place.location.lat(), place.location.lng(), [place.displayName, place.formattedAddress].filter(Boolean).join(", "), "google");
+          }));
+        });
+        if (!gBox.children.length) gBox.innerHTML = `<p class="sub">No Google results</p>`;
+      } catch(e){ gBox.innerHTML = `<p class="sub">Google search isn't available. Check the key in Settings.</p>`; }
+    }
+    // Line 2: OpenStreetMap
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=lk&limit=5&q=${encodeURIComponent(q)}`);
+      const j = await r.json();
+      j.forEach(x => oBox.appendChild(resultBtn(x.name || x.display_name.split(",")[0], x.display_name, () => { gBox.innerHTML = ""; oBox.innerHTML = ""; setPin(x.lat, x.lon, x.display_name, "osm"); })));
+      if (!j.length) oBox.innerHTML = `<p class="sub">No OpenStreetMap results. Try the town name, then drag the pin.</p>`;
+    } catch(e){}
+  }
+  function parseLink(u){
+    let m = u.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || u.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || u.match(/[?&](?:q|query|ll|destination|center)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/);
+    return m ? [+m[1], +m[2]] : null;
+  }
+  $("l_q").oninput = e => { clearTimeout(t1); const q = e.target.value.trim(); t1 = setTimeout(() => search(q), 600); };
+  $("l_link").onchange = async e => {
+    let u = e.target.value.trim(); if (!u) return; $("l_msg").textContent = "";
+    let ll = parseLink(u);
+    if (!ll && /goo\.gl|maps\.app/.test(u)){ try { $("l_msg").textContent = "Opening link…"; const j = await call("resolveLink", { url: u }); u = j.url; ll = parseLink(u); } catch(err){} }
+    if (ll){ st.address = ""; setPin(ll[0], ll[1], "", "link"); $("l_msg").textContent = "Location set from the link."; e.target.value = ""; }
+    else $("l_msg").textContent = "Couldn't read a location from that link.";
+  };
+  $("l_clear").onclick = () => { st.lat = st.lng = null; st.address = ""; st.src = ""; if (marker){ gmap ? marker.setMap(null) : map.removeLayer(marker); } updDir(); };
+  updDir(); initMap().catch(() => { $("l_map").innerHTML = `<p class="sub" style="padding:12px">The map couldn't load. Check your connection; search and links still work.</p>`; });
+  return () => ({ address: st.address, lat: st.lat ?? "", lng: st.lng ?? "", locSource: st.src });
 }
 
 /* ---------- Editor ---------- */
@@ -320,7 +506,21 @@ function openEditor(g0){
       <div><label class="f">Up to people</label><input type="number" min="1" id="e_max" value="${num(g.max)||1}"></div>
     </div>
     <label class="f">WhatsApp number</label><input type="tel" id="e_phone" value="${esc(g.phone)}" placeholder="077 123 4567">
+    <label class="f">Physical invitation</label><select id="e_phys">${opt(["No","Physical only","WhatsApp and physical"], g.physical || "No")}</select>
+    ${g.physicalSentAt ? `<p class="sub" style="margin-top:4px">Card given on ${new Date(g.physicalSentAt).toLocaleDateString()}</p>` : ""}
     <label class="f">Notes</label><input type="text" id="e_notes" value="${esc(g.notes)}" placeholder="Optional">
+    <div class="card" style="margin-top:12px">
+      <b>Location</b>
+      <input type="text" id="l_q" placeholder="Search a place or address" style="margin-top:8px" autocomplete="off">
+      <div id="l_gline" hidden><div class="sub" style="margin:6px 0 2px">Google Maps</div><div id="l_gres"></div></div>
+      <div class="sub" style="margin:6px 0 2px">OpenStreetMap</div><div id="l_ores"></div>
+      <div id="l_map" style="height:220px;border-radius:10px;margin-top:8px;background:#eee"></div>
+      <p class="sub" style="margin-top:6px">Tap the map or drag the pin to the exact house.</p>
+      <input type="text" id="l_link" placeholder="Or paste a Google Maps link" style="margin-top:6px">
+      <div class="sub" id="l_msg"></div>
+      <p style="font-size:14px;margin-top:8px" id="l_addr"></p>
+      <div class="actions" style="margin-top:8px"><a class="btn sm" id="l_dir" target="_blank" rel="noopener" hidden>Directions</a><button class="btn sm" id="l_clear" type="button">Clear location</button></div>
+    </div>
     <label class="f">Reply-by date for this guest (leave empty to use ${esc(deadlineLabel(g))})</label><input type="date" id="e_by" value="${esc(g.rsvpBy || "")}">
     ${replyBlock("w","Wedding")}${replyBlock("r","Reception")}
     <div id="dupBox"></div>
@@ -335,6 +535,7 @@ function openEditor(g0){
   $("panel").hidden = false; document.body.style.overflow = "hidden";
   const close = () => { $("panel").hidden = true; document.body.style.overflow = ""; };
   $("xBtn").onclick = close; $("panel").onclick = e => { if (e.target === $("panel")) close(); };
+  const getLoc = setupLocation(g);
   $("e_inv").onchange = () => { const v = $("e_inv").value, t = {invitedTo:v}; $("rep_w").hidden = !invited(t,"w"); $("rep_r").hidden = !invited(t,"r"); };
   if (!isNew){
     $("copyBtn").onclick = async () => { try { await navigator.clipboard.writeText(link(g)); toast("Link copied"); } catch(e){ toast(link(g)); } };
@@ -348,7 +549,8 @@ function openEditor(g0){
   $("saveBtn").onclick = async () => {
     $("eErr").textContent = "";
     const upd = { code: g.code || "", name: $("e_name").value.trim(), side: $("e_side").value, group: $("e_group").value,
-      invitedTo: $("e_inv").value, max: Math.max(1, num($("e_max").value)), phone: $("e_phone").value.trim(), notes: $("e_notes").value.trim(), rsvpBy: $("e_by").value };
+      invitedTo: $("e_inv").value, max: Math.max(1, num($("e_max").value)), phone: $("e_phone").value.trim(), notes: $("e_notes").value.trim(), rsvpBy: $("e_by").value, physical: $("e_phys").value };
+    Object.assign(upd, getLoc());
     if (!upd.name){ $("eErr").textContent = "Enter a name."; return; }
     ["w","r"].forEach(ev => {
       if (!invited(upd, ev)) return;
@@ -410,6 +612,7 @@ function renderSettings(){
       <div id="s_gd">${groups().map(gr => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="flex:1;font-size:14px">${esc(gr)}</span><input type="date" data-gd="${esc(gr)}" value="${esc(groupDates()[gr] || "")}" style="width:170px"></div>`).join("")}</div>
       <p class="sub">After a guest's date, their link still shows the invitation, but replying closes and they're asked to contact you. You can still enter their reply here.</p>
       <label class="f">Default number of people per new invitation</label><input type="number" min="1" id="s_max" value="${esc(num(s.defaultMax) || 2)}">
+      <label class="f">Google Maps key (optional · turns on Google search in guest locations)</label><input type="text" id="s_gkey" value="${esc(s.googleMapsKey || "")}" placeholder="AIza…" autocomplete="off">
       <label class="f">Invitation website address</label><input type="text" id="s_url" value="${esc(s.siteUrl)}">
       <label class="f">Invitation song</label>
       <div style="display:flex;gap:8px"><select id="s_song"><option value="">Loading songs…</option></select><button class="btn" id="s_play" type="button" style="white-space:nowrap">▶ Play</button></div>
@@ -435,7 +638,7 @@ function renderSettings(){
     const byText = by ? new Date(by + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
     const gr = $("s_groups").value.split("\n").map(x=>x.trim()).filter(Boolean).join("|");
     $("sSave").disabled = true;
-    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), groups: gr, groupDeadlines: JSON.stringify(Object.fromEntries([...document.querySelectorAll("[data-gd]")].filter(i => i.value).map(i => [i.dataset.gd, i.value]))), defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
+    try { const j = await call("settings", { settings: { rsvpBy: by, rsvpByText: byText, siteUrl: $("s_url").value.trim(), googleMapsKey: $("s_gkey").value.trim(), groups: gr, groupDeadlines: JSON.stringify(Object.fromEntries([...document.querySelectorAll("[data-gd]")].filter(i => i.value).map(i => [i.dataset.gd, i.value]))), defaultMax: Math.max(1, num($("s_max").value)), song: $("s_song").value, waTemplate: $("s_wa").value } }); DATA.settings = j.settings; toast("Settings saved"); }
     catch(e){ $("sErr").textContent = e.message; }
     $("sSave").disabled = false;
   };

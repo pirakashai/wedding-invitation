@@ -9,7 +9,7 @@ const PASSWORD = 'change-me';
 
 const COLS = ['code','name','side','group','invitedTo','max','phone','notes','sentAt',
   'w_status','w_veg','w_nonveg','w_message','w_source','w_at',
-  'r_status','r_veg','r_nonveg','r_message','r_source','r_at','updatedAt','rsvpBy'];
+  'r_status','r_veg','r_nonveg','r_message','r_source','r_at','updatedAt','rsvpBy','physical','physicalSentAt','address','lat','lng','locSource'];
 const REPO = 'pirakashai/wedding-invitation';
 
 function doGet(e) { return handle_(e.parameter || {}); }
@@ -36,6 +36,7 @@ function handle_(req) {
       else if (a === 'setGithubToken') out = setGithubToken_(req.token);
       else if (a === 'githubStatus') out = { ok: true, hasToken: !!PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN') };
       else if (a === 'uploadSong') out = uploadSong_(req.name, req.data);
+      else if (a === 'resolveLink') out = resolveLink_(req.url);
       else throw new Error('Unknown action');
     }
   } catch (err) {
@@ -264,4 +265,17 @@ function uploadSong_(name, b64) {
 function authorize() {
   UrlFetchApp.fetch('https://api.github.com/zen', { muteHttpExceptions: true });
   Logger.log('GitHub access allowed');
+}
+
+/* ---------- Locations: expand a short Google Maps link (maps.app.goo.gl) ---------- */
+function resolveLink_(url) {
+  url = String(url || '').trim();
+  if (!/^https:\/\/(maps\.app\.goo\.gl|goo\.gl|maps\.google\.|www\.google\.)/.test(url)) throw new Error('Paste a Google Maps link');
+  for (let i = 0; i < 5; i++) {
+    const r = UrlFetchApp.fetch(url, { followRedirects: false, muteHttpExceptions: true });
+    const loc = r.getHeaders()['Location'] || r.getHeaders()['location'];
+    if (!loc) break;
+    url = loc;
+  }
+  return { ok: true, url: url };
 }
